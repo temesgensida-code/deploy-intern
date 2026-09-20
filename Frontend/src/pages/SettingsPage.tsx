@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Navigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth'
@@ -48,6 +49,10 @@ export default function SettingsPage() {
   const { user } = useAuthStore()
   const { t } = useTranslation()
   const isEmployer = user?.role === 'employer'
+
+  if (user?.role === 'employee') {
+    return <Navigate to="/dashboard" replace />
+  }
 
   // Change Password state
   const [currentPassword, setCurrentPassword] = useState('')

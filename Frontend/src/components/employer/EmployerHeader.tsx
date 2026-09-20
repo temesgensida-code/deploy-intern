@@ -107,17 +107,19 @@ export default function EmployerHeader({ title }: EmployerHeaderProps) {
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false)
-                  navigate('/settings')
-                }}
-                className="flex w-full items-center gap-2.5 px-3.5 py-2 text-xs hover:bg-muted transition-colors text-foreground"
-              >
-                <Settings className="h-4 w-4 text-muted-foreground" />
-                Settings
-              </button>
+              {!isEmployee && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    navigate('/settings')
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2 text-xs hover:bg-muted transition-colors text-foreground"
+                >
+                  <Settings className="h-4 w-4 text-muted-foreground" />
+                  Settings
+                </button>
+              )}
 
               <div className="border-t border-border/60 my-1" />
 
