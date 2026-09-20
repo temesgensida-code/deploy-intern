@@ -38,6 +38,9 @@ php artisan storage:link --force || true
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     echo "==> [Render] Executing database migrations..."
     php artisan migrate --force || echo "==> [Render] Warning: Migration check failed. Will retry on next deploy or manual trigger."
+
+    echo "==> [Render] Ensuring admin account exists..."
+    php artisan db:seed --class=AdminUserSeeder --force || echo "==> [Render] Warning: Admin seeder failed."
 fi
 
 # Cache configuration, routes, and views for optimal production performance
