@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { X, Plus, Trash2 } from 'lucide-react'
@@ -8,11 +8,51 @@ import { useProfileStore } from '@/stores/profile'
 import type { WorkExperience, Education, Language } from '@/stores/profile'
 import EmployeeSidebar from '@/components/employee/EmployeeSidebar'
 import { employeeFeedService } from '@/services/employeeFeedService'
-import { useEffect } from 'react'
 import EmployerHeader from '@/components/employer/EmployerHeader'
 
 function uid() {
   return Math.random().toString(36).slice(2)
+}
+
+export const MAIN_LANGUAGES = [
+  { value: 'English', label: 'English' },
+  { value: 'Amharic', label: 'Amharic (አማርኛ)' },
+  { value: 'Afaan Oromoo', label: 'Afaan Oromoo' },
+  { value: 'Tigrinya', label: 'Tigrinya (ትግርኛ)' },
+  { value: 'Somali', label: 'Somali (Soomaali)' },
+  { value: 'Sidama', label: 'Sidama (Sidaamu Afoo)' },
+  { value: 'Wolaytta', label: 'Wolaytta' },
+  { value: 'Arabic', label: 'Arabic (العربية)' },
+  { value: 'French', label: 'French (Français)' },
+  { value: 'German', label: 'German (Deutsch)' },
+  { value: 'Spanish', label: 'Spanish (Español)' },
+  { value: 'Mandarin Chinese', label: 'Mandarin Chinese (中文)' },
+  { value: 'Italian', label: 'Italian (Italiano)' },
+] as const
+
+export const FLUENCY_LEVELS = [
+  { value: 'Native', label: 'Native / Bilingual' },
+  { value: 'Fluent', label: 'Fluent' },
+  { value: 'Advanced', label: 'Advanced' },
+  { value: 'Intermediate', label: 'Intermediate' },
+  { value: 'Conversational', label: 'Conversational' },
+  { value: 'Basic', label: 'Basic / Elementary' },
+] as const
+
+export function parseLanguageItem(rawLang: any): Language {
+  const name = typeof rawLang === 'string' ? rawLang : (rawLang?.name || rawLang?.language || '')
+  const level = rawLang?.level || rawLang?.fluency || 'Fluent'
+  const matched = MAIN_LANGUAGES.find(
+    (m) =>
+      m.value.toLowerCase() === name.trim().toLowerCase() ||
+      m.label.toLowerCase() === name.trim().toLowerCase()
+  )
+  return {
+    id: rawLang?.id || uid(),
+    name: matched ? matched.value : name,
+    level,
+    isCustom: rawLang?.isCustom ?? (!matched && Boolean(name.trim())),
+  }
 }
 
 export default function EditProfilePage() {
@@ -30,49 +70,73 @@ export default function EditProfilePage() {
   const [showSkillInput, setShowSkillInput] = useState(false)
   const [experience, setExperience] = useState<WorkExperience[]>(profile.experience)
   const [education, setEducation] = useState<Education[]>(profile.education)
-  const [languages, setLanguages] = useState<Language[]>(profile.languages)
+  const [languages, setLanguages] = useState<Language[]>(() =>
+    (profile.languages || []).map(parseLanguageItem)
+  )
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    employeeFeedService.getProfile().then((res) => {
-      if (res?.profile) {
-        const p = res.profile
-        if (p.headline) setHeadline(p.headline)
-        if (p.phone) setPhone(p.phone)
-        if (p.location) setLocation(p.location)
-        if (p.bio) setBio(p.bio)
-        if (Array.isArray(p.skills) && p.skills.length > 0) setSkills(p.skills)
-        if (Array.isArray(p.experience) && p.experience.length > 0) {
-          setExperience(p.experience.map((e) => ({
-            id: uid(),
-            title: e.title || '',
-            company: e.company || '',
-            period: e.start_date ? `${e.start_date} - ${e.end_date || 'Present'}` : '',
-          })))
+    employeeFeedService
+      .getProfile()
+      .then((res) => {
+        if (res?.profile) {
+          const p = res.profile
+          if (p.headline) setHeadline(p.headline)
+          if (p.phone) setPhone(p.phone)
+          if (p.location) setLocation(p.location)
+          if (p.bio) setBio(p.bio)
+          if (Array.isArray(p.skills) && p.skills.length > 0) setSkills(p.skills)
+          if (Array.isArray(p.experience) && p.experience.length > 0) {
+            setExperience(
+              p.experience.map((e) => ({
+                id: uid(),
+                title: e.title || '',
+                company: e.company || '',
+                period: e.start_date ? `${e.start_date} - ${e.end_date || 'Present'}` : '',
+              }))
+            )
+          }
+          if (Array.isArray(p.education) && p.education.length > 0) {
+            setEducation(
+              p.education.map((e) => ({
+                id: uid(),
+                degree: e.degree || '',
+                institution: e.institution || '',
+                year: e.year || '',
+              }))
+            )
+          }
+          if (Array.isArray(p.languages) && p.languages.length > 0) {
+            setLanguages(p.languages.map(parseLanguageItem))
+          }
         }
-        if (Array.isArray(p.education) && p.education.length > 0) {
-          setEducation(p.education.map((e) => ({
-            id: uid(),
-            degree: e.degree || '',
-            institution: e.institution || '',
-            year: e.year || '',
-          })))
-        }
-        if (Array.isArray(p.languages) && p.languages.length > 0) {
-          setLanguages(p.languages.map((l) => ({
-            id: uid(),
-            name: typeof l === 'string' ? l : (l as any).name || '',
-            level: (l as any).level || 'Conversational',
-          })))
-        }
-      }
-    }).catch(() => {})
+      })
+      .catch(() => {})
   }, [])
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      setProfile({ headline, phone, location, bio, skills, experience, education, languages })
+      const cleanedLanguages = languages
+        .filter((l) => l.name && l.name.trim().length > 0)
+        .map((l) => ({
+          id: l.id,
+          name: l.name.trim(),
+          level: l.level,
+          isCustom: l.isCustom,
+        }))
+
+      setProfile({
+        headline,
+        phone,
+        location,
+        bio,
+        skills,
+        experience,
+        education,
+        languages: cleanedLanguages,
+      })
+
       await employeeFeedService.updateProfile({
         headline,
         phone,
@@ -81,7 +145,7 @@ export default function EditProfilePage() {
         skills,
         experience,
         education,
-        languages,
+        languages: cleanedLanguages,
       })
       toast.success(t('editProfile.profileSaved'))
       navigate('/my-profile')
@@ -112,8 +176,11 @@ export default function EditProfilePage() {
   const removeEdu = (id: string) => setEducation(education.filter((e) => e.id !== id))
 
   const addLanguage = () =>
-    setLanguages([...languages, { id: uid(), name: '', level: 'Conversational' }])
-  const updateLang = (id: string, field: keyof Language, value: string) =>
+    setLanguages([
+      ...languages,
+      { id: uid(), name: '', level: 'Fluent', isCustom: false },
+    ])
+  const updateLang = (id: string, field: keyof Language, value: any) =>
     setLanguages(languages.map((l) => (l.id === id ? { ...l, [field]: value } : l)))
   const removeLang = (id: string) => setLanguages(languages.filter((l) => l.id !== id))
 
@@ -454,6 +521,7 @@ export default function EditProfilePage() {
                 type="button"
                 onClick={addLanguage}
                 className="inline-flex items-center gap-1 text-xs font-medium text-foreground hover:underline transition-colors"
+                aria-label="Add language"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>{t('common.add')}</span>
@@ -466,39 +534,105 @@ export default function EditProfilePage() {
               </p>
             )}
 
-            <div className="space-y-2">
-              {languages.map((lang) => (
-                <div key={lang.id} className="flex items-center gap-2.5">
-                  <input
-                    value={lang.name}
-                    onChange={(e) => updateLang(lang.id, 'name', e.target.value)}
-                    placeholder={t('editProfile.languagePlaceholder')}
-                    className={`${inputCls} flex-1`}
-                  />
-                  <select
-                    value={lang.level}
-                    onChange={(e) => updateLang(lang.id, 'level', e.target.value)}
-                    className={`${inputCls} w-36`}
-                  >
-                    {[
-                      'Native',
-                      'Fluent',
-                      'Advanced',
-                      'Intermediate',
-                      'Conversational',
-                      'Basic',
-                    ].map((l) => (
-                      <option key={l}>{l}</option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => removeLang(lang.id)}
-                    className="p-1.5 text-muted-foreground hover:text-rose-600 transition-colors flex-shrink-0"
-                    aria-label="Remove language"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+            <div className="space-y-3">
+              {languages.map((lang, index) => (
+                <div
+                  key={lang.id}
+                  data-testid={`language-item-${index}`}
+                  className="border border-border/70 rounded-xl p-4 bg-background/50 hover:border-border transition-colors space-y-3 relative"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 pr-6 sm:pr-0">
+                      <div>
+                        <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+                          {t('editProfile.languages')}
+                        </label>
+                        <select
+                          aria-label="Select Language"
+                          data-testid={`language-select-${index}`}
+                          value={lang.isCustom ? 'OTHER' : (lang.name || '')}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            if (val === 'OTHER') {
+                              setLanguages(
+                                languages.map((l) =>
+                                  l.id === lang.id ? { ...l, isCustom: true, name: '' } : l
+                                )
+                              )
+                            } else {
+                              setLanguages(
+                                languages.map((l) =>
+                                  l.id === lang.id ? { ...l, isCustom: false, name: val } : l
+                                )
+                              )
+                            }
+                          }}
+                          className={inputCls}
+                        >
+                          <option value="" disabled>
+                            {t('editProfile.selectLanguage')}
+                          </option>
+                          <optgroup label={t('editProfile.mainLanguages')}>
+                            {MAIN_LANGUAGES.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="Custom">
+                            <option value="OTHER">{t('editProfile.otherLanguage')}</option>
+                          </optgroup>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+                          {t('editProfile.fluency')}
+                        </label>
+                        <select
+                          aria-label="Select Fluency"
+                          data-testid={`fluency-select-${index}`}
+                          value={lang.level}
+                          onChange={(e) => updateLang(lang.id, 'level', e.target.value)}
+                          className={inputCls}
+                        >
+                          {FLUENCY_LEVELS.map((lvl) => (
+                            <option key={lvl.value} value={lvl.value}>
+                              {lvl.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeLang(lang.id)}
+                      className="p-1.5 text-muted-foreground hover:text-rose-600 transition-colors flex-shrink-0 mt-6 sm:mt-5 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                      title="Remove language"
+                      aria-label="Remove language"
+                      data-testid={`remove-language-${index}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {lang.isCustom && (
+                    <div className="pt-1">
+                      <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+                        {t('editProfile.customLanguage')}
+                      </label>
+                      <input
+                        aria-label="Custom Language Name"
+                        data-testid={`custom-language-input-${index}`}
+                        value={lang.name}
+                        onChange={(e) => updateLang(lang.id, 'name', e.target.value)}
+                        placeholder={t('editProfile.customLanguagePlaceholder')}
+                        className={inputCls}
+                        autoFocus
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

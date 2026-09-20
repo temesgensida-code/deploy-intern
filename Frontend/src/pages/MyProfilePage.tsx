@@ -1,16 +1,69 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Briefcase, MapPin, Mail, Phone, GraduationCap, Globe, Edit3 } from 'lucide-react'
+import { Briefcase, MapPin, Mail, Phone, GraduationCap, Globe, Edit3, Plus } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
 import EmployeeSidebar from '@/components/employee/EmployeeSidebar'
 import EmployerHeader from '@/components/employer/EmployerHeader'
+import { employeeFeedService } from '@/services/employeeFeedService'
+
+function uid() {
+  return Math.random().toString(36).slice(2)
+}
 
 export default function MyProfilePage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { user } = useAuthStore()
-  const { profile } = useProfileStore()
+  const { profile, setProfile } = useProfileStore()
+
+  useEffect(() => {
+    employeeFeedService
+      .getProfile()
+      .then((res) => {
+        if (res?.profile) {
+          const p = res.profile
+          setProfile({
+            headline: p.headline ?? profile.headline,
+            phone: p.phone ?? profile.phone,
+            location: p.location ?? profile.location,
+            bio: p.bio ?? profile.bio,
+            skills: Array.isArray(p.skills) ? p.skills : profile.skills,
+            experience:
+              Array.isArray(p.experience) && p.experience.length > 0
+                ? p.experience.map((e: any) => ({
+                    id: e.id || uid(),
+                    title: e.title || '',
+                    company: e.company || '',
+                    period: e.start_date
+                      ? `${e.start_date} - ${e.end_date || 'Present'}`
+                      : e.period || '',
+                  }))
+                : profile.experience,
+            education:
+              Array.isArray(p.education) && p.education.length > 0
+                ? p.education.map((e: any) => ({
+                    id: e.id || uid(),
+                    degree: e.degree || '',
+                    institution: e.institution || '',
+                    year: e.year || '',
+                  }))
+                : profile.education,
+            languages:
+              Array.isArray(p.languages) && p.languages.length > 0
+                ? p.languages.map((l: any) => ({
+                    id: l.id || uid(),
+                    name: typeof l === 'string' ? l : l?.name || l?.language || '',
+                    level: l?.level || l?.fluency || 'Fluent',
+                    isCustom: l?.isCustom,
+                  }))
+                : profile.languages,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const filledFields = [
     profile.headline,
@@ -284,6 +337,13 @@ export default function MyProfilePage() {
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {t('profile.languages')}
                   </h3>
+                  <button
+                    onClick={() => navigate('/edit-profile')}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Add</span>
+                  </button>
                 </div>
 
                 {profile.languages.length === 0 ? (
@@ -300,14 +360,14 @@ export default function MyProfilePage() {
                   <div className="space-y-2 pt-1">
                     {profile.languages.map((lang) => (
                       <div
-                        key={lang.id}
-                        className="flex items-center justify-between text-xs py-1"
+                        key={lang.id || lang.name}
+                        className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-muted/40 border border-border/50"
                       >
-                        <span className="flex items-center gap-1.5 font-medium text-foreground">
+                        <span className="flex items-center gap-2 font-medium text-foreground">
                           <Globe className="h-3.5 w-3.5 text-muted-foreground" />
                           <span>{lang.name}</span>
                         </span>
-                        <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-md font-medium">
+                        <span className="text-[11px] font-medium text-muted-foreground bg-background/80 px-2 py-0.5 rounded-md border border-border/50">
                           {lang.level}
                         </span>
                       </div>

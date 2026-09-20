@@ -136,7 +136,13 @@
     "languages": "ቋንቋዎች",
     "noLanguages": "እስካሁን ምንም ቋንቋ አልተጨመረም።",
     "languagePlaceholder": "ቋንቋ",
-    "profileSaved": "መገለጫ ተቀምጧል!"
+    "profileSaved": "መገለጫ ተቀምጧል!",
+    "fluency": "የቋንቋ ችሎታ ደረጃ",
+    "selectLanguage": "ቋንቋ ይምረጡ...",
+    "customLanguage": "ሌላ ቋንቋ ስም",
+    "customLanguagePlaceholder": "የቋንቋውን ስም ያስገቡ (ለምሳሌ፦ ስዋሂሊ)",
+    "mainLanguages": "ዋና ቋንቋዎች",
+    "otherLanguage": "ሌላ (ከታች ይጥቀሱ)..."
   },
   "settings": {
     "title": "ቅንብሮች",

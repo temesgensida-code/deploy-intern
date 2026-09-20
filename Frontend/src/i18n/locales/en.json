@@ -136,7 +136,13 @@
     "languages": "Languages",
     "noLanguages": "No languages added yet.",
     "languagePlaceholder": "Language",
-    "profileSaved": "Profile saved!"
+    "profileSaved": "Profile saved!",
+    "fluency": "Fluency / Proficiency",
+    "selectLanguage": "Select language...",
+    "customLanguage": "Custom Language Name",
+    "customLanguagePlaceholder": "Enter language name (e.g. Swahili, Portuguese)",
+    "mainLanguages": "Main Languages",
+    "otherLanguage": "Other (Specify below)..."
   },
   "settings": {
     "title": "Settings",

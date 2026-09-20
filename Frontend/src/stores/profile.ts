@@ -19,6 +19,7 @@ export interface Language {
   id: string
   name: string
   level: string
+  isCustom?: boolean
 }
 
 export interface ProfileData {
