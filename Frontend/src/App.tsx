@@ -237,10 +237,28 @@ export default function App() {
               />
 
               <Route
+                path="/create-job"
+                element={
+                  <RoleProtectedRoute allowedRoles={['employer', 'admin']}>
+                    <CreateJobPage />
+                  </RoleProtectedRoute>
+                }
+              />
+
+              <Route
                 path="/jobs/create"
                 element={
                   <RoleProtectedRoute allowedRoles={['employer', 'admin']}>
                     <CreateJobPage />
+                  </RoleProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/edit-job"
+                element={
+                  <RoleProtectedRoute allowedRoles={['employer', 'admin']}>
+                    <EditJobPage />
                   </RoleProtectedRoute>
                 }
               />
@@ -255,10 +273,28 @@ export default function App() {
               />
 
               <Route
+                path="/job-applicants"
+                element={
+                  <RoleProtectedRoute allowedRoles={['employer', 'admin']}>
+                    <JobApplicantsPage />
+                  </RoleProtectedRoute>
+                }
+              />
+
+              <Route
                 path="/jobs/:id/applicants"
                 element={
                   <RoleProtectedRoute allowedRoles={['employer', 'admin']}>
                     <JobApplicantsPage />
+                  </RoleProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/applicant-details"
+                element={
+                  <RoleProtectedRoute allowedRoles={['employer', 'admin']}>
+                    <ApplicantDetailsPage />
                   </RoleProtectedRoute>
                 }
               />
