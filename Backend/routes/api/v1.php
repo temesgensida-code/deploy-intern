@@ -110,9 +110,12 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
             Route::prefix('companies')->name('api.v1.admin.companies.')->group(function (): void {
                 Route::get('/', [AdminCompanyController::class, 'index'])->name('index');
                 Route::get('{employer}', [AdminCompanyController::class, 'show'])->name('show');
+                Route::match(['put', 'patch'], '{employer}', [AdminCompanyController::class, 'update'])->name('update');
                 Route::patch('{employer}/status', [AdminCompanyController::class, 'updateStatus'])->name('update-status');
                 Route::post('{employer}/approve', [AdminCompanyController::class, 'approve'])->name('approve');
+                Route::post('{employer}/approved', [AdminCompanyController::class, 'approve'])->name('approved');
                 Route::post('{employer}/reject', [AdminCompanyController::class, 'reject'])->name('reject');
+                Route::post('{employer}/rejected', [AdminCompanyController::class, 'reject'])->name('rejected');
                 Route::delete('{employer}', [AdminCompanyController::class, 'destroy'])->name('destroy');
             });
 

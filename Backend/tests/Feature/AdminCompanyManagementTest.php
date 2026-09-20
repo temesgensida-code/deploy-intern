@@ -101,6 +101,20 @@ class AdminCompanyManagementTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_approve_company_via_approved_alias(): void
+    {
+        $response = $this->actingAs($this->admin)
+            ->postJson("/api/v1/admin/companies/{$this->employer->id}/approved");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.approval_status', 'approved');
+
+        $this->assertDatabaseHas('employers', [
+            'id' => $this->employer->id,
+            'approval_status' => 'approved',
+        ]);
+    }
+
     public function test_admin_can_reject_company(): void
     {
         $response = $this->actingAs($this->admin)
@@ -112,6 +126,43 @@ class AdminCompanyManagementTest extends TestCase
         $this->assertDatabaseHas('employers', [
             'id' => $this->employer->id,
             'approval_status' => 'rejected',
+        ]);
+    }
+
+    public function test_admin_can_reject_company_via_rejected_alias(): void
+    {
+        $response = $this->actingAs($this->admin)
+            ->postJson("/api/v1/admin/companies/{$this->employer->id}/rejected");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.approval_status', 'rejected');
+
+        $this->assertDatabaseHas('employers', [
+            'id' => $this->employer->id,
+            'approval_status' => 'rejected',
+        ]);
+    }
+
+    public function test_admin_can_update_company_profile_details(): void
+    {
+        $response = $this->actingAs($this->admin)
+            ->putJson("/api/v1/admin/companies/{$this->employer->id}", [
+                'company_name' => 'Acme Global Technologies',
+                'location' => 'Bole, Addis Ababa',
+                'industry' => 'Fintech',
+                'company_size' => '500+ employees',
+                'description' => 'Leading financial technology solutions provider.',
+                'website' => 'https://acme-global.com',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.company_name', 'Acme Global Technologies')
+            ->assertJsonPath('data.industry', 'Fintech');
+
+        $this->assertDatabaseHas('employers', [
+            'id' => $this->employer->id,
+            'company_name' => 'Acme Global Technologies',
+            'industry' => 'Fintech',
         ]);
     }
 

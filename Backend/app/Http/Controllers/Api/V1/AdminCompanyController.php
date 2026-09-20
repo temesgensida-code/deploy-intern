@@ -71,6 +71,36 @@ class AdminCompanyController extends Controller
     }
 
     /**
+     * Update an employer company profile details as admin.
+     */
+    public function update(Request $request, Employer $employer): JsonResponse
+    {
+        $validated = $request->validate([
+            'company_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'website' => ['nullable', 'string', 'max:255'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'industry' => ['nullable', 'string', 'max:255'],
+            'company_size' => ['nullable', 'string', 'max:100'],
+            'description' => ['nullable', 'string'],
+            'approval_status' => ['sometimes', 'required', 'string', 'in:approved,pending,rejected'],
+        ]);
+
+        $employer->update($validated);
+
+        if (isset($validated['approval_status'])) {
+            if ($validated['approval_status'] === 'approved') {
+                $employer->user?->notify(new EmployerApprovedNotification($employer));
+            } elseif ($validated['approval_status'] === 'rejected') {
+                $employer->user?->notify(new EmployerRejectedNotification($employer));
+            }
+        }
+
+        return $this->success($employer->fresh()->load('user'), 'Company profile updated successfully');
+    }
+
+    /**
      * Update approval status of a company.
      */
     public function updateStatus(Request $request, Employer $employer): JsonResponse
