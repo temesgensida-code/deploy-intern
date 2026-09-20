@@ -1,14 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": true,
-  "trailingSlash": false,
   "buildCommand": "cd Frontend && npm run build",
   "outputDirectory": "Frontend/dist",
   "installCommand": "cd Frontend && npm install",
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://job-listing-backend-qto1.onrender.com/api/:path*"
+      "destination": "https://job-list-backend-59o2.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
