@@ -24,10 +24,22 @@ type Category = {
   name: string
 }
 
+const DEFAULT_CATEGORIES: Category[] = [
+  { id: 1, name: 'Software & IT' },
+  { id: 2, name: 'Data Science & Analytics' },
+  { id: 3, name: 'Product & Design' },
+  { id: 4, name: 'Marketing & Sales' },
+  { id: 5, name: 'Customer Support' },
+  { id: 6, name: 'Finance & Accounting' },
+  { id: 7, name: 'Human Resources & Operations' },
+  { id: 8, name: 'Healthcare & Medical' },
+  { id: 9, name: 'Education & Training' },
+]
+
 export default function CreateJobPage() {
   const navigate = useNavigate()
 
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES)
   const [hasEmployerProfile, setHasEmployerProfile] = useState<boolean | null>(null)
   const [isLoadingPage, setIsLoadingPage] = useState(true)
 
@@ -56,9 +68,18 @@ export default function CreateJobPage() {
       try {
         setIsLoadingPage(true)
         // Fetch categories
-        const catRes = await api.get('/categories')
-        if (catRes.data.success) {
-          setCategories(catRes.data.data || [])
+        try {
+          const catRes = await api.get('/categories')
+          const raw = catRes.data?.data
+          const items: Category[] = Array.isArray(raw) ? raw : raw?.data || []
+          if (items.length > 0) {
+            setCategories(items)
+          } else {
+            setCategories(DEFAULT_CATEGORIES)
+          }
+        } catch (catErr) {
+          console.warn('Could not fetch categories from API, using default list:', catErr)
+          setCategories(DEFAULT_CATEGORIES)
         }
 
         // Check employer profile
@@ -85,7 +106,7 @@ export default function CreateJobPage() {
   function handleChange(
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) {
     const { name, value, type } = e.target
 
@@ -448,45 +469,49 @@ export default function CreateJobPage() {
                       <textarea
                         id="description"
                         name="description"
+                        rows={4}
                         value={formData.description}
                         onChange={handleChange}
-                        rows={4}
+                        placeholder="Describe the overall mission, role overview, and team context..."
                         className="w-full rounded-lg border border-border/80 bg-muted/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring resize-y"
-                        placeholder="Provide a detailed description of the role..."
                         required
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="responsibilities" className="text-xs font-medium text-muted-foreground">Responsibilities</Label>
+                      <Label htmlFor="responsibilities" className="text-xs font-medium text-muted-foreground">
+                        Responsibilities (One per line)
+                      </Label>
                       <textarea
                         id="responsibilities"
                         name="responsibilities"
+                        rows={4}
                         value={formData.responsibilities}
                         onChange={handleChange}
-                        rows={3}
+                        placeholder="Design core API services&#10;Optimize database queries&#10;Conduct code reviews"
                         className="w-full rounded-lg border border-border/80 bg-muted/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring resize-y"
-                        placeholder="List key responsibilities (one per line)..."
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="requirements" className="text-xs font-medium text-muted-foreground">Requirements</Label>
+                      <Label htmlFor="requirements" className="text-xs font-medium text-muted-foreground">
+                        Requirements (One per line)
+                      </Label>
                       <textarea
                         id="requirements"
                         name="requirements"
+                        rows={4}
                         value={formData.requirements}
                         onChange={handleChange}
-                        rows={3}
+                        placeholder="3+ years backend development experience&#10;Proficiency with Laravel / PHP&#10;Experience with PostgreSQL"
                         className="w-full rounded-lg border border-border/80 bg-muted/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring resize-y"
-                        placeholder="List key qualifications and skills required (one per line)..."
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Review Alert */}
-                <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-800 dark:text-blue-300">
+                {/* Workflow Notice */}
+                <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4 text-xs text-blue-900 dark:text-blue-300">
                   <p className="font-semibold">Admin Approval Notice</p>
                   <p className="mt-0.5 text-blue-700/90 dark:text-blue-400/90">
                     When you click "Post Job", your listing will be submitted for admin review before becoming publicly visible. Saving as a draft lets you edit it anytime later.

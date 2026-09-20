@@ -7,6 +7,7 @@ use App\Http\Requests\V1\Category\StoreCategoryRequest;
 use App\Http\Requests\V1\Category\UpdateCategoryRequest;
 use App\Http\Traits\ApiResponse;
 use App\Models\Category;
+use Database\Seeders\CategorySeeder;
 use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
@@ -19,12 +20,24 @@ class CategoryController extends Controller
             ->orderBy('display_order')
             ->get();
 
+        if ($categories->isEmpty()) {
+            (new CategorySeeder())->run();
+            $categories = Category::where('is_active', true)
+                ->orderBy('display_order')
+                ->get();
+        }
+
         return $this->success($categories, 'Categories retrieved successfully');
     }
 
     public function adminIndex(): JsonResponse
     {
         $categories = Category::orderBy('display_order')->get();
+
+        if ($categories->isEmpty()) {
+            (new CategorySeeder())->run();
+            $categories = Category::orderBy('display_order')->get();
+        }
 
         return $this->success($categories, 'All categories retrieved successfully');
     }

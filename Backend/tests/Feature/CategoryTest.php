@@ -68,6 +68,17 @@ class CategoryTest extends TestCase
             ->assertJsonFragment(['name' => 'Active Category One']);
     }
 
+    public function test_index_auto_seeds_categories_when_empty(): void
+    {
+        $this->assertEquals(0, Category::count());
+
+        $response = $this->getJson('/api/v1/categories');
+
+        $response->assertStatus(200);
+        $this->assertGreaterThan(0, Category::count());
+        $this->assertDatabaseHas('categories', ['slug' => 'software-it']);
+    }
+
     public function test_admin_index_lists_all_categories(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
