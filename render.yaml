@@ -1,5 +1,5 @@
 databases:
-  - name: job-listing-db
+  - name: job-listing-database
     databaseName: job_listing_platform
     user: job_listing_user
     plan: free
@@ -7,7 +7,7 @@ databases:
 
 services:
   - type: web
-    name: job-listing-backend
+    name: job-list-backend
     runtime: docker
     plan: free
     region: oregon
