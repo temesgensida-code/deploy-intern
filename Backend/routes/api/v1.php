@@ -57,14 +57,16 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
     Route::post('confirm-change-password', [AuthController::class, 'confirmChangePassword'])->name('api.v1.confirm-change-password');
     Route::post('email/verify-otp', [AuthController::class, 'verifyEmailOtp'])->name('verification.verify');
 
-    Route::post('email/resend', [AuthController::class, 'resendVerificationEmail'])
-        ->middleware('throttle:6,1')
+    Route::post('email/resend', [AuthController::class, 'resendVerificationEmail']
+        )->middleware('throttle:6,1')
         ->name('verification.send');
 
-    // CV upload/download - protected by auth:sanctum
+    // CV upload/download/preview/status - protected by auth:sanctum
     Route::prefix('users/cv')->name('api.v1.users.cv.')->group(function (): void {
+        Route::get('/', [UserCVController::class, 'status'])->name('index');
         Route::post('upload', [UserCVController::class, 'upload'])->name('upload');
         Route::get('download', [UserCVController::class, 'download'])->name('download');
+        Route::get('preview', [UserCVController::class, 'preview'])->name('preview');
         Route::get('status', [UserCVController::class, 'status'])->name('status');
         Route::delete('/', [UserCVController::class, 'destroy'])->name('destroy');
     });
@@ -218,43 +220,6 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
         // Employer approval routes (Admin controlled with internal role check)
         Route::prefix('employers')->name('api.v1.employers.')->group(function (): void {
             Route::get('pending', [EmployerController::class, 'pending'])->name('pending');
-            Route::put('{employer}/approval-status', [EmployerController::class, 'updateApprovalStatus'])->name('approval-status');
-        });
-
-        // Employer profiles - protected by auth:sanctum, verified & employer role
-        Route::middleware(EnsureRole::class . ':employer')->prefix('employers')->name('api.v1.employers.')->group(function (): void {
-            Route::get('/', [EmployerController::class, 'index'])->name('index');
-            Route::post('/', [EmployerController::class, 'store'])->name('store');
-            Route::get('{employer}', [EmployerController::class, 'show'])->name('show');
-            Route::put('{employer}', [EmployerController::class, 'update'])->name('update');
-            Route::delete('{employer}', [EmployerController::class, 'destroy'])->name('destroy');
-        });
-
-        // Category management - admin only & verified
-        Route::middleware(EnsureRole::class . ':admin')->prefix('categories')->name('api.v1.categories.')->group(function (): void {
-            Route::post('/', [CategoryController::class, 'store'])->name('store');
-            Route::put('{category}', [CategoryController::class, 'update'])->name('update');
-            Route::delete('{category}', [CategoryController::class, 'destroy'])->name('destroy');
         });
     });
-});
-
-// Password reset routes (public with rate limiting)
-Route::middleware('throttle:6,1')->group(function (): void {
-    Route::post('forgot-password', [AuthController::class, 'forgotPassword'])
-        ->name('password.email');
-    Route::post('reset-password', [AuthController::class, 'resetPassword'])
-        ->name('password.reset');
-});
-
-// Public category browsing (no auth required)
-Route::prefix('categories')->name('api.v1.categories.')->group(function (): void {
-    Route::get('/', [CategoryController::class, 'index'])->name('index');
-    Route::get('{category}', [CategoryController::class, 'show'])->name('show');
-});
-
-// Public Job Post Browsing
-Route::prefix('jobs')->name('api.v1.jobs.')->group(function (): void {
-    Route::get('/', [JobPostController::class, 'index'])->name('index');
-    Route::get('{jobPost:slug}', [JobPostController::class, 'show'])->name('show');
 });

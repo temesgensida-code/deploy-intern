@@ -46,7 +46,28 @@ class UserCVController extends Controller
             return $this->error('CV not found', 404);
         }
 
-        return Storage::disk('local')->download($user->cv_path);
+        return Storage::disk('local')->download($user->cv_path, $user->cv_original_name ?? 'cv.pdf');
+    }
+
+    /**
+     * Preview the authenticated user's CV inline.
+     */
+    public function preview(Request $request): StreamedResponse|JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user->cv_path || ! Storage::disk('local')->exists($user->cv_path)) {
+            return $this->error('CV not found', 404);
+        }
+
+        return Storage::disk('local')->response(
+            $user->cv_path,
+            $user->cv_original_name ?? 'cv.pdf',
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . ($user->cv_original_name ?? 'cv.pdf') . '"',
+            ]
+        );
     }
 
     /**

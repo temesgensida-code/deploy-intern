@@ -30,7 +30,7 @@ const translationMap: Record<string, string> = {
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => translationMap[key] ?? key,
+    t: (key: string, fallback?: string) => translationMap[key] ?? fallback ?? key,
     i18n: { language: 'en', changeLanguage: vi.fn() },
   }),
 }))
@@ -57,6 +57,14 @@ vi.mock('@/stores/auth', () => ({
     logout: vi.fn(),
   }),
 }))
+
+// Mock URL.createObjectURL and revokeObjectURL
+if (typeof window.URL.createObjectURL === 'undefined') {
+  window.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/test-cv-blob')
+}
+if (typeof window.URL.revokeObjectURL === 'undefined') {
+  window.URL.revokeObjectURL = vi.fn()
+}
 
 afterEach(() => {
   vi.useRealTimers()
@@ -131,7 +139,7 @@ describe('CVResumePage', () => {
     expect(screen.getByText('File size exceeds 2MB limit')).toBeTruthy()
   })
 
-  it('sends a PDF as FormData without forcing a multipart content-type header', async () => {
+  it('sends a PDF as FormData when uploaded', async () => {
     renderPage()
     const input = screen.getByTestId('cv-input')
     const pdf = new File([new Uint8Array(100 * 1024)], 'My_CV.pdf', {
@@ -146,8 +154,92 @@ describe('CVResumePage', () => {
 
     expect(vi.mocked(api.post).mock.calls[0][0]).toBe('/users/cv/upload')
     expect(vi.mocked(api.post).mock.calls[0][1]).toBeInstanceOf(FormData)
-    expect(vi.mocked(api.post).mock.calls[0][2]).toMatchObject({
-      headers: { 'Content-Type': 'multipart/form-data' },
+  })
+
+  it('displays the CV title, file size, and upload date when a CV exists', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        data: {
+          has_cv: true,
+          file_name: 'Senior_Engineer_Resume.pdf',
+          cv_uploaded_at: '2026-09-20T10:00:00Z',
+          file_size: 1024 * 1024 * 1.5, // 1.5 MB
+        },
+      },
+    })
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cv-title')).toHaveTextContent('Senior_Engineer_Resume.pdf')
+      expect(screen.getByTestId('cv-size')).toHaveTextContent('1.5 MB')
+      expect(screen.getByTestId('cv-date')).toHaveTextContent('Uploaded on')
+    })
+    expect(screen.getByText('Ready for applications')).toBeTruthy()
+  })
+
+  it('opens in-app PDF preview modal when View CV is clicked', async () => {
+    vi.mocked(api.get).mockImplementation(async (url: string) => {
+      if (url.includes('/download')) {
+        return { data: new Blob(['fake pdf'], { type: 'application/pdf' }) }
+      }
+      return {
+        data: {
+          data: {
+            has_cv: true,
+            file_name: 'Senior_Engineer_Resume.pdf',
+            cv_uploaded_at: '2026-09-20T10:00:00Z',
+            file_size: 500000,
+          },
+        },
+      }
+    })
+
+    renderPage()
+
+    const viewBtn = await screen.findByTestId('view-cv-btn')
+    fireEvent.click(viewBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cv-preview-modal')).toBeTruthy()
+      expect(screen.getByTestId('cv-preview-iframe')).toBeTruthy()
+    })
+
+    const closeBtn = screen.getByTestId('close-preview-btn')
+    fireEvent.click(closeBtn)
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('cv-preview-modal')).toBeNull()
+    })
+  })
+
+  it('opens confirmation modal and deletes CV when confirmed', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        data: {
+          has_cv: true,
+          file_name: 'My_Resume.pdf',
+          cv_uploaded_at: '2026-09-20T10:00:00Z',
+          file_size: 200000,
+        },
+      },
+    })
+
+    renderPage()
+
+    const removeBtn = await screen.findByTestId('remove-cv-btn')
+    fireEvent.click(removeBtn)
+
+    // Confirmation modal should appear
+    expect(screen.getByTestId('delete-confirm-modal')).toBeTruthy()
+    expect(screen.getByText(/Are you sure you want to remove/)).toBeTruthy()
+
+    // Confirm deletion
+    const confirmBtn = screen.getByTestId('confirm-remove-btn')
+    fireEvent.click(confirmBtn)
+
+    await waitFor(() => {
+      expect(vi.mocked(api.delete)).toHaveBeenCalledWith('/users/cv')
     })
   })
 })

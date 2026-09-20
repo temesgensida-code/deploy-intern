@@ -80,6 +80,21 @@ class UserCVTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_job_seeker_can_preview_own_cv(): void
+    {
+        Storage::disk('local')->put('cvs/users/test.pdf', 'fake pdf content');
+        $this->jobSeeker->update([
+            'cv_path' => 'cvs/users/test.pdf',
+            'cv_original_name' => 'test.pdf',
+        ]);
+
+        $response = $this->actingAs($this->jobSeeker)
+            ->get('/api/v1/users/cv/preview');
+
+        $response->assertStatus(200)
+            ->assertHeader('Content-Type', 'application/pdf');
+    }
+
     public function test_download_nonexistent_cv_returns_404(): void
     {
         $response = $this->actingAs($this->jobSeeker)
@@ -93,6 +108,15 @@ class UserCVTest extends TestCase
     {
         $response = $this->actingAs($this->jobSeeker)
             ->getJson('/api/v1/users/cv/status');
+
+        $response->assertOk()
+            ->assertJsonPath('data.has_cv', false);
+    }
+
+    public function test_index_route_returns_cv_status(): void
+    {
+        $response = $this->actingAs($this->jobSeeker)
+            ->getJson('/api/v1/users/cv');
 
         $response->assertOk()
             ->assertJsonPath('data.has_cv', false);
