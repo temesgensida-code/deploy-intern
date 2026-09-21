@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import api from '@/lib/api'
 
 const SETTINGS_STORAGE_KEY = 'hirestream_admin_platform_settings'
 
@@ -43,6 +44,31 @@ export default function AdminSettingsPage() {
     }
     return DEFAULT_SETTINGS
   })
+
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true)
+
+  useEffect(() => {
+    api.get('/user/notification-preferences')
+      .then((res) => {
+        if (res.data?.data?.email_notifications_enabled !== undefined) {
+          setEmailNotificationsEnabled(Boolean(res.data.data.email_notifications_enabled))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleToggleAdminEmail = async (enabled: boolean) => {
+    setEmailNotificationsEnabled(enabled)
+    try {
+      await api.put('/user/notification-preferences', {
+        email_notifications_enabled: enabled,
+      })
+      toast.success(enabled ? 'Admin email notifications enabled' : 'Admin email notifications disabled')
+    } catch {
+      setEmailNotificationsEnabled(!enabled)
+      toast.error('Failed to update email preferences')
+    }
+  }
 
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
@@ -222,6 +248,23 @@ export default function AdminSettingsPage() {
                     requireEmployerVerification: e.target.checked,
                   }))
                 }
+                className="mt-1 h-4 w-4 rounded border-border accent-neutral-900 dark:accent-white"
+              />
+            </label>
+
+            <label className="flex items-start justify-between p-3 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer">
+              <div className="space-y-0.5 pr-4">
+                <span className="text-xs font-semibold text-foreground block">
+                  Admin Email Review Alerts
+                </span>
+                <span className="text-[11px] text-muted-foreground block">
+                  Receive email notifications when new job posts or employer companies are pending moderation.
+                </span>
+              </div>
+              <input
+                type="checkbox"
+                checked={emailNotificationsEnabled}
+                onChange={(e) => handleToggleAdminEmail(e.target.checked)}
                 className="mt-1 h-4 w-4 rounded border-border accent-neutral-900 dark:accent-white"
               />
             </label>

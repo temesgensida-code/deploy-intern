@@ -6,9 +6,11 @@ namespace App\Notifications\V1\Admin;
 
 use App\Models\JobPost;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class JobSubmittedForReviewNotification extends Notification
+class JobSubmittedForReviewNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -23,7 +25,32 @@ class JobSubmittedForReviewNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        $channels = ['database'];
+
+        if (method_exists($notifiable, 'wantsEmailNotifications') && $notifiable->wantsEmailNotifications()) {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        $reviewUrl = rtrim((string) config('app.frontend_url'), '/') . '/admin/jobs';
+        $companyName = $this->jobPost->employer->company_name ?? 'An employer';
+
+        return (new MailMessage)
+            ->subject("[Action Required] New Job Post Pending Review: {$this->jobPost->title}")
+            ->greeting("Hello {$notifiable->name},")
+            ->line("A new job post **'{$this->jobPost->title}'** has been submitted by **{$companyName}** and is pending moderation.")
+            ->when($this->jobPost->category?->name, fn (MailMessage $m) => $m->line("Category: {$this->jobPost->category->name}"))
+            ->when($this->jobPost->location, fn (MailMessage $m) => $m->line("Location: {$this->jobPost->location}"))
+            ->action('Moderate Job Post', $reviewUrl)
+            ->line('Please review the job details to approve or reject the posting.')
+            ->line('Thank you for administering ' . config('app.name') . '!');
     }
 
     /**

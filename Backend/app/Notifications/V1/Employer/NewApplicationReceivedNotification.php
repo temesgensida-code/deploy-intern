@@ -8,9 +8,11 @@ use App\Models\Application;
 use App\Models\JobPost;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewApplicationReceivedNotification extends Notification
+class NewApplicationReceivedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -23,11 +25,35 @@ class NewApplicationReceivedNotification extends Notification
     /**
      * Get the notification's delivery channels.
      *
-     * @return array<int, string>
+     * @return list<string>
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        $channels = ['database'];
+
+        if (method_exists($notifiable, 'wantsEmailNotifications') && $notifiable->wantsEmailNotifications()) {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        $applicantsUrl = rtrim((string) config('app.frontend_url'), '/') . '/job-applicants';
+
+        return (new MailMessage)
+            ->subject("New Application: {$this->applicant->name} for {$this->jobPost->title}")
+            ->greeting("Hello {$notifiable->name},")
+            ->line("You have received a new application for your open role **'{$this->jobPost->title}'**.")
+            ->line("**Candidate Name:** {$this->applicant->name}")
+            ->line("**Candidate Email:** {$this->applicant->email}")
+            ->action('Review Candidate Application', $applicantsUrl)
+            ->line('Log in to your employer dashboard to view their CV, evaluate qualifications, and schedule an interview.')
+            ->line('Thank you for using ' . config('app.name') . '!');
     }
 
     /**

@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\InterviewController;
 use App\Http\Controllers\Api\V1\JobPostController;
 use App\Http\Controllers\Api\V1\SavedJobController;
 use App\Http\Controllers\Api\V1\UserCVController;
+use App\Http\Controllers\Api\V1\UserNotificationPreferenceController;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +61,12 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
     Route::post('email/resend', [AuthController::class, 'resendVerificationEmail'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
+
+    // Notification preferences
+    Route::prefix('user/notification-preferences')->name('api.v1.user.notification-preferences.')->group(function (): void {
+        Route::get('/', [UserNotificationPreferenceController::class, 'show'])->name('show');
+        Route::put('/', [UserNotificationPreferenceController::class, 'update'])->name('update');
+    });
 
     // CV upload/download/preview/status - protected by auth:sanctum
     Route::prefix('users/cv')->name('api.v1.users.cv.')->group(function (): void {

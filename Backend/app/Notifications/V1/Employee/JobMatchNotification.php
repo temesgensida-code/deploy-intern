@@ -6,9 +6,11 @@ namespace App\Notifications\V1\Employee;
 
 use App\Models\JobPost;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class JobMatchNotification extends Notification
+class JobMatchNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -28,7 +30,46 @@ class JobMatchNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        $channels = ['database'];
+
+        if (method_exists($notifiable, 'wantsEmailNotifications') && $notifiable->wantsEmailNotifications()) {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        $companyName = $this->jobPost->employer->company_name ?? 'An employer';
+        $matchedSkills = (array) ($this->reasons['matched_skills'] ?? []);
+        $actionUrl = rtrim((string) config('app.frontend_url'), '/') . "/jobs/{$this->jobPost->slug}";
+
+        $mail = (new MailMessage)
+            ->subject("🎯 New {$this->matchScore}% Job Match: {$this->jobPost->title}")
+            ->greeting("Hello {$notifiable->name},")
+            ->line("Our job matching system found a position that strongly aligns with your qualifications and skills:")
+            ->line("**Role:** {$this->jobPost->title}")
+            ->line("**Company:** {$companyName}")
+            ->line("**Match Score:** {$this->matchScore}% match");
+
+        if (! empty($matchedSkills)) {
+            $mail->line("**Matched Skills:** " . implode(', ', array_slice($matchedSkills, 0, 5)));
+        }
+
+        if ($this->jobPost->is_remote) {
+            $mail->line("**Location:** Remote 🌐");
+        } elseif ($this->jobPost->location) {
+            $mail->line("**Location:** {$this->jobPost->location}");
+        }
+
+        return $mail
+            ->action('View Job & Apply Now', $actionUrl)
+            ->line('Be among the first candidates to apply to maximize your chances of being interviewed!')
+            ->line('Thank you for searching for opportunities on ' . config('app.name') . '!');
     }
 
     /**

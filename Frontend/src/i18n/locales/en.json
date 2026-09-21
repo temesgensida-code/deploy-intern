@@ -180,7 +180,14 @@
     "otpIncomplete": "Please enter a complete 6-digit code",
     "twoFactorEnabledSuccess": "Two-factor authentication enabled successfully",
     "twoFactorDisabledSuccess": "Two-factor authentication disabled",
-    "otpResent": "A new verification code has been sent"
+    "otpResent": "A new verification code has been sent",
+    "notifications": "Email Notifications",
+    "emailNotificationsEnabled": "Email notifications are enabled",
+    "emailNotificationsDisabled": "Email notifications are disabled",
+    "emailNotificationsDesc": "Receive timely email updates for application status changes, interviews, new candidate applications, and job matches.",
+    "emailNotificationsEnabledToast": "Email notifications enabled",
+    "emailNotificationsDisabledToast": "Email notifications disabled",
+    "emailNotificationsError": "Failed to update email preferences"
   },
   "jobs": {
     "title": "Job Search",

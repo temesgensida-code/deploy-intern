@@ -47,6 +47,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'username',
         'role',
         'is_suspended',
+        'email_notifications_enabled',
         'password',
         'cv_path',
         'cv_original_name',
@@ -76,6 +77,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'role' => UserRole::class,
             'is_suspended' => 'boolean',
+            'email_notifications_enabled' => 'boolean',
         ];
     }
 
@@ -122,6 +124,14 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return false;
+    }
+
+    /**
+     * Check whether the user wants to receive email notifications.
+     */
+    public function wantsEmailNotifications(): bool
+    {
+        return (bool) ($this->email_notifications_enabled ?? true);
     }
 
     /**

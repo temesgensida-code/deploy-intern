@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Navigate } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth'
 import EmployerSidebar from '@/components/employer/EmployerSidebar'
@@ -46,12 +45,54 @@ function PasswordField({
 }
 
 export default function SettingsPage() {
-  const { user } = useAuthStore()
+  const { user, getProfile } = useAuthStore()
   const { t } = useTranslation()
   const isEmployer = user?.role === 'employer'
 
-  if (user?.role === 'employee') {
-    return <Navigate to="/dashboard" replace />
+  // Notification preferences state
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(
+    user?.email_notifications_enabled ?? true
+  )
+  const [isUpdatingEmailPref, setIsUpdatingEmailPref] = useState(false)
+
+  // Fetch current notification preferences from backend
+  useEffect(() => {
+    let isMounted = true
+    api.get('/user/notification-preferences')
+      .then((res) => {
+        if (isMounted && res.data?.data?.email_notifications_enabled !== undefined) {
+          setEmailNotificationsEnabled(Boolean(res.data.data.email_notifications_enabled))
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const handleToggleEmailNotifications = async () => {
+    const nextValue = !emailNotificationsEnabled
+    setEmailNotificationsEnabled(nextValue)
+    setIsUpdatingEmailPref(true)
+
+    try {
+      await api.put('/user/notification-preferences', {
+        email_notifications_enabled: nextValue,
+      })
+      await getProfile()
+      toast.success(
+        nextValue
+          ? t('settings.emailNotificationsEnabledToast', 'Email notifications enabled')
+          : t('settings.emailNotificationsDisabledToast', 'Email notifications disabled')
+      )
+    } catch {
+      setEmailNotificationsEnabled(!nextValue)
+      toast.error(t('settings.emailNotificationsError', 'Failed to update email preferences'))
+    } finally {
+      setIsUpdatingEmailPref(false)
+    }
   }
 
   // Change Password state
@@ -150,6 +191,46 @@ export default function SettingsPage() {
               {t('settings.subtitle', 'Manage your account settings, security preferences, and display options.')}
             </p>
           </div>
+
+          {/* Email Notifications Preference */}
+          <section className={sectionCls}>
+            <div className="flex items-center gap-2 border-b border-border/50 pb-3">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('settings.notifications', 'Email Notifications')}
+              </h2>
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <div className="pr-4">
+                <p className="text-xs font-semibold text-foreground">
+                  {emailNotificationsEnabled
+                    ? t('settings.emailNotificationsEnabled', 'Email notifications are enabled')
+                    : t('settings.emailNotificationsDisabled', 'Email notifications are disabled')}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  {t(
+                    'settings.emailNotificationsDesc',
+                    'Receive timely email updates for application status changes, interviews, new candidate applications, and job matches.'
+                  )}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={isUpdatingEmailPref}
+                onClick={handleToggleEmailNotifications}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none disabled:opacity-50 ${
+                  emailNotificationsEnabled ? 'bg-primary' : 'bg-muted-foreground/30'
+                }`}
+                aria-label="Toggle email notifications"
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs transition-transform ${
+                    emailNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </section>
 
           {/* Change Password */}
           <section className={sectionCls}>

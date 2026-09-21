@@ -8,6 +8,7 @@ export interface User {
   role: UserRole
   role_label?: string
   is_suspended?: boolean
+  email_notifications_enabled?: boolean
   status?: string
   email_verified_at: string | null
   created_at?: string

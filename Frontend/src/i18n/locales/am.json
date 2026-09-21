@@ -180,7 +180,14 @@
     "otpIncomplete": "እባክዎን የተሟላ ባለ 6 አሃዝ ኮድ ያስገቡ",
     "twoFactorEnabledSuccess": "ባለሁለት ደረጃ ማረጋገጫ በተሳካ ሁኔታ በርቷል",
     "twoFactorDisabledSuccess": "ባለሁለት ደረጃ ማረጋገጫ ጠፍቷል",
-    "otpResent": "አዲስ የማረጋገጫ ኮድ ተልኳል"
+    "otpResent": "አዲስ የማረጋገጫ ኮድ ተልኳል",
+    "notifications": "የኢሜይል ማሳወቂያዎች",
+    "emailNotificationsEnabled": "የኢሜይል ማሳወቂያዎች በርተዋል",
+    "emailNotificationsDisabled": "የኢሜይል ማሳወቂያዎች ጠፍተዋል",
+    "emailNotificationsDesc": "የማመልከቻ ሁኔታ ለውጦች፣ ቃለ-መጠይቆች፣ አዳዲስ አመልካቾች እና የስራ ማዛመጃዎች ማሳወቂያዎችን በኢሜይል ያግኙ።",
+    "emailNotificationsEnabledToast": "የኢሜይል ማሳወቂያዎች ነቅተዋል",
+    "emailNotificationsDisabledToast": "የኢሜይል ማሳወቂያዎች ተዘግተዋል",
+    "emailNotificationsError": "የኢሜይል ምርጫዎችን ማዘመን አልተሳካም"
   },
   "jobs": {
     "title": "ስራ ፈልግ",

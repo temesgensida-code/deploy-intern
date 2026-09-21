@@ -320,7 +320,7 @@ export default function App() {
               <Route
                 path="/settings"
                 element={
-                  <RoleProtectedRoute allowedRoles={['admin', 'employer']}>
+                  <RoleProtectedRoute allowedRoles={['admin', 'employer', 'employee']}>
                     <SettingsPage />
                   </RoleProtectedRoute>
                 }

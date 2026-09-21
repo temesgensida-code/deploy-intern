@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, User, FileText, Search, LogOut,
-  ChevronLeft, ChevronRight, Menu, X, FileUp
+  ChevronLeft, ChevronRight, Menu, X, FileUp, Settings
 } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
@@ -13,6 +13,7 @@ const navItems = [
   { label: 'Applications',icon: FileText,        path: '/my-applications' },
   { label: 'CV/Resume',   icon: FileUp,          path: '/cv-resume' },
   { label: 'Job Search',  icon: Search,          path: '/job-search' },
+  { label: 'Settings',    icon: Settings,        path: '/settings' },
 ]
 
 function NavList({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
