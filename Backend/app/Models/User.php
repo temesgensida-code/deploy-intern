@@ -234,7 +234,7 @@ class User extends Authenticatable implements MustVerifyEmail
                     return $this->profile_photo_path;
                 }
 
-                return Storage::disk('public')->url($this->profile_photo_path);
+                return '/storage/' . ltrim($this->profile_photo_path, '/');
             }
         );
     }

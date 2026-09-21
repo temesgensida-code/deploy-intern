@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Briefcase, MapPin, Mail, Phone, GraduationCap, Globe, Edit3, Plus } from 'lucide-react'
@@ -18,8 +18,10 @@ export default function MyProfilePage() {
   const { t } = useTranslation()
   const { user } = useAuthStore()
   const { profile, setProfile } = useProfileStore()
+  const [imgError, setImgError] = useState(false)
 
   useEffect(() => {
+    useAuthStore.getState().getProfile().catch(() => {})
     employeeFeedService
       .getProfile()
       .then((res) => {
@@ -90,10 +92,11 @@ export default function MyProfilePage() {
           <div className="bg-card border border-border/70 rounded-xl p-6 sm:p-7 shadow-xs space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
               <div className="flex items-start gap-4 min-w-0">
-                {user?.profile_photo_url ? (
+                {user?.profile_photo_url && !imgError ? (
                   <img
                     src={getStorageUrl(user.profile_photo_url)}
                     alt={user.name}
+                    onError={() => setImgError(true)}
                     className="h-14 w-14 rounded-xl object-cover border border-border/70 flex-shrink-0 shadow-xs"
                   />
                 ) : (

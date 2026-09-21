@@ -25,6 +25,7 @@ export default function EmployerHeader({ title }: EmployerHeaderProps) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [imgError, setImgError] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   // Stream real-time employer and employee notifications
@@ -75,10 +76,11 @@ export default function EmployerHeader({ title }: EmployerHeaderProps) {
             onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
           >
-            {user?.profile_photo_url ? (
+            {user?.profile_photo_url && !imgError ? (
               <img
                 src={getStorageUrl(user.profile_photo_url)}
                 alt={user?.name ?? 'User'}
+                onError={() => setImgError(true)}
                 className="h-8 w-8 rounded-full object-cover border border-border/70 flex-shrink-0"
               />
             ) : (

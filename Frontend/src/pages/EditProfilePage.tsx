@@ -78,6 +78,7 @@ export default function EditProfilePage() {
   )
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -189,7 +190,7 @@ export default function EditProfilePage() {
         languages: cleanedLanguages,
       })
 
-      await employeeFeedService.updateProfile({
+      const updated = await employeeFeedService.updateProfile({
         headline,
         phone,
         location,
@@ -199,6 +200,11 @@ export default function EditProfilePage() {
         education,
         languages: cleanedLanguages,
       })
+      if (updated && (updated as any).user) {
+        useAuthStore.setState({ user: (updated as any).user })
+      } else {
+        await useAuthStore.getState().getProfile().catch(() => {})
+      }
       toast.success(t('editProfile.profileSaved'))
       navigate('/my-profile')
     } catch {
@@ -270,10 +276,11 @@ export default function EditProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-5 pt-1">
               <div className="relative group">
                 <div className="h-24 w-24 rounded-2xl overflow-hidden border-2 border-dashed border-border/80 bg-muted/30 flex items-center justify-center flex-shrink-0 shadow-xs relative">
-                  {previewUrl || user?.profile_photo_url ? (
+                  {previewUrl || (user?.profile_photo_url && !photoError) ? (
                     <img
                       src={previewUrl || getStorageUrl(user?.profile_photo_url)}
                       alt={user?.name ?? 'Profile'}
+                      onError={() => setPhotoError(true)}
                       className="h-full w-full object-cover"
                     />
                   ) : (

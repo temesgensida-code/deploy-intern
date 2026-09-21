@@ -17,6 +17,7 @@ function getInitials(name?: string) {
 export default function AdminHeader() {
   const { user, logout } = useAuthStore()
   const [open, setOpen] = useState(false)
+  const [imgError, setImgError] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
@@ -57,10 +58,11 @@ export default function AdminHeader() {
             onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/70 transition-colors"
           >
-            {user?.profile_photo_url ? (
+            {user?.profile_photo_url && !imgError ? (
               <img
                 src={getStorageUrl(user.profile_photo_url)}
                 alt={user?.name ?? 'Admin'}
+                onError={() => setImgError(true)}
                 className="h-8 w-8 rounded-full object-cover border border-border/70 flex-shrink-0 shadow-2xs"
               />
             ) : (

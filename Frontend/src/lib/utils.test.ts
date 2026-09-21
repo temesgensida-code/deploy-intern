@@ -27,6 +27,12 @@ describe('cn', () => {
     const result = cn()
     expect(result).toBe('')
   })
+
+  it('normalizes localhost dummy storage URLs to relative storage paths', () => {
+    expect(getStorageUrl('http://localhost/storage/profile-photos/abc.png')).toBe('/storage/profile-photos/abc.png')
+    expect(getStorageUrl('http://localhost:8000/storage/profile-photos/abc.png')).toBe('/storage/profile-photos/abc.png')
+    expect(getStorageUrl('http://127.0.0.1/storage/profile-photos/abc.png')).toBe('/storage/profile-photos/abc.png')
+  })
 })
 
 describe('getStorageUrl', () => {
