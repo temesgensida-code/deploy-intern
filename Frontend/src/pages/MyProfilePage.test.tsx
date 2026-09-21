@@ -9,6 +9,7 @@ vi.mock('@/stores/auth', () => ({
   useAuthStore: () => ({
     user: { name: 'Test User', email: 'test@example.com' },
     logout: vi.fn(),
+    getProfile: vi.fn().mockResolvedValue(null),
   }),
 }))
 

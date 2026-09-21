@@ -16,12 +16,12 @@ function uid() {
 export default function MyProfilePage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { user } = useAuthStore()
+  const { user, getProfile } = useAuthStore()
   const { profile, setProfile } = useProfileStore()
   const [imgError, setImgError] = useState(false)
 
   useEffect(() => {
-    useAuthStore.getState().getProfile().catch(() => {})
+    getProfile?.()?.catch?.(() => {})
     employeeFeedService
       .getProfile()
       .then((res) => {
