@@ -24,9 +24,10 @@ use Laravel\Sanctum\NewAccessToken;
  * @property string $username
  * @property UserRole|null $role
  * @property bool $is_suspended
- * @property Carbon|null 
- * @property string|null 
- * @property-read string|null $email_verified_at
+ * @property bool $email_notifications_enabled
+ * @property string|null $profile_photo_path
+ * @property Carbon|null $email_verified_at
+ * @property-read string|null $profile_photo_url
  * @property string $password
  * @property string|null $remember_token
  * @property string|null $cv_path

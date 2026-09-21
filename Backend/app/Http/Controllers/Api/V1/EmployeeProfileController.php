@@ -12,6 +12,7 @@ use App\Models\EmployeeProfile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 
 class EmployeeProfileController extends Controller
 {
@@ -58,7 +59,7 @@ class EmployeeProfileController extends Controller
         ]);
 
         if ($request->hasFile('photo') || $request->hasFile('profile_photo')) {
-            /** @var IlluminateHttpUploadedFile $photoFile */
+            /** @var UploadedFile $photoFile */
             $photoFile = $request->file('photo') ?? $request->file('profile_photo');
             if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
                 Storage::disk('public')->delete($user->profile_photo_path);
