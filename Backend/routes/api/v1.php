@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\JobPostController;
 use App\Http\Controllers\Api\V1\SavedJobController;
 use App\Http\Controllers\Api\V1\UserCVController;
 use App\Http\Controllers\Api\V1\UserNotificationPreferenceController;
+use App\Http\Controllers\Api\V1\UserProfilePhotoController;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +67,16 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
     Route::prefix('user/notification-preferences')->name('api.v1.user.notification-preferences.')->group(function (): void {
         Route::get('/', [UserNotificationPreferenceController::class, 'show'])->name('show');
         Route::put('/', [UserNotificationPreferenceController::class, 'update'])->name('update');
+    });
+
+    // Profile photo upload/delete - protected by auth:sanctum
+    Route::prefix('user/profile-photo')->name('api.v1.user.profile-photo.')->group(function (): void {
+        Route::post('/', [UserProfilePhotoController::class, 'upload'])->name('upload');
+        Route::delete('/', [UserProfilePhotoController::class, 'destroy'])->name('destroy');
+    });
+    Route::prefix('users/profile-photo')->name('api.v1.users.profile-photo.')->group(function (): void {
+        Route::post('/', [UserProfilePhotoController::class, 'upload'])->name('alias.upload');
+        Route::delete('/', [UserProfilePhotoController::class, 'destroy'])->name('alias.destroy');
     });
 
     // CV upload/download/preview/status - protected by auth:sanctum

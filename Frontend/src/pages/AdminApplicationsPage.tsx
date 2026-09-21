@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { getStorageUrl } from '@/lib/utils'
 import { usePageRefresh } from '@/hooks/usePageRefresh'
 
 interface ApplicantInfo {
@@ -25,6 +26,8 @@ interface ApplicantInfo {
   email: string
   username: string
   cv_path: string | null
+  profile_photo_url?: string | null
+  profile_photo_path?: string | null
 }
 
 interface EmployerInfo {
@@ -337,9 +340,17 @@ export default function AdminApplicationsPage() {
                   <tr key={app.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-muted text-foreground font-bold text-xs flex items-center justify-center border border-border/60">
-                          {app.applicant?.name?.charAt(0).toUpperCase() || "A"}
-                        </div>
+                        {app.applicant?.profile_photo_url ? (
+                          <img
+                            src={getStorageUrl(app.applicant.profile_photo_url)}
+                            alt={app.applicant.name}
+                            className="w-8 h-8 rounded-full object-cover border border-border/60 flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-muted text-foreground font-bold text-xs flex items-center justify-center border border-border/60 flex-shrink-0">
+                            {app.applicant?.name?.charAt(0).toUpperCase() || "A"}
+                          </div>
+                        )}
                         <div>
                           <p className="font-semibold text-foreground">{app.applicant?.name || "Unknown"}</p>
                           <p className="text-[10px] text-muted-foreground">{app.applicant?.email}</p>
@@ -458,7 +469,19 @@ export default function AdminApplicationsPage() {
             </div>
 
             {/* Applicant Summary */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-muted/40 p-4 rounded-xl text-xs border border-border/60">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-muted/40 p-4 rounded-xl text-xs border border-border/60">
+              {selectedApp.applicant?.profile_photo_url ? (
+                <img
+                  src={getStorageUrl(selectedApp.applicant.profile_photo_url)}
+                  alt={selectedApp.applicant?.name || 'Applicant'}
+                  className="w-12 h-12 rounded-xl object-cover border border-border/60 flex-shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-xl bg-muted text-foreground font-bold text-sm flex items-center justify-center border border-border/60 flex-shrink-0">
+                  {selectedApp.applicant?.name?.charAt(0).toUpperCase() || 'A'}
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
               <div>
                 <span className="text-[10px] text-muted-foreground uppercase font-medium block">Applicant Name</span>
                 <span className="font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
@@ -491,6 +514,7 @@ export default function AdminApplicationsPage() {
                 >
                   <Download size={13} /> Download CV Document
                 </button>
+              </div>
               </div>
             </div>
 

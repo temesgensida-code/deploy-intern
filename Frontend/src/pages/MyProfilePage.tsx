@@ -7,6 +7,7 @@ import { useProfileStore } from '@/stores/profile'
 import EmployeeSidebar from '@/components/employee/EmployeeSidebar'
 import EmployerHeader from '@/components/employer/EmployerHeader'
 import { employeeFeedService } from '@/services/employeeFeedService'
+import { getStorageUrl } from '@/lib/utils'
 
 function uid() {
   return Math.random().toString(36).slice(2)
@@ -89,9 +90,17 @@ export default function MyProfilePage() {
           <div className="bg-card border border-border/70 rounded-xl p-6 sm:p-7 shadow-xs space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
               <div className="flex items-start gap-4 min-w-0">
-                <div className="h-14 w-14 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center text-xl font-bold flex-shrink-0 shadow-xs">
-                  {user?.name?.[0]?.toUpperCase() ?? 'U'}
-                </div>
+                {user?.profile_photo_url ? (
+                  <img
+                    src={getStorageUrl(user.profile_photo_url)}
+                    alt={user.name}
+                    className="h-14 w-14 rounded-xl object-cover border border-border/70 flex-shrink-0 shadow-xs"
+                  />
+                ) : (
+                  <div className="h-14 w-14 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex items-center justify-center text-xl font-bold flex-shrink-0 shadow-xs">
+                    {user?.name?.[0]?.toUpperCase() ?? 'U'}
+                  </div>
+                )}
                 <div className="min-w-0 space-y-1">
                   <h2 className="text-xl font-bold tracking-tight text-foreground">
                     {user?.name ?? 'Candidate Profile'}

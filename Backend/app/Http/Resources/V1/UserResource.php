@@ -28,6 +28,8 @@ class UserResource extends JsonResource
             'role_label' => $this->role?->label(),
             'is_suspended' => (bool) $this->is_suspended,
             'status' => $this->is_suspended ? 'Suspended' : 'Active',
+            'profile_photo_path' => $this->profile_photo_path,
+            'profile_photo_url' => $this->profile_photo_url,
             'email_verified_at' => $this->email_verified_at?->toDateTimeString(),
             'created_at' => $this->created_at?->toDateTimeString(),
             'updated_at' => $this->updated_at?->toDateTimeString(),

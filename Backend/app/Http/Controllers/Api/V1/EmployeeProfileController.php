@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\ApiResponse;
 use App\Jobs\AnalyzeEmployeeJobMatchesJob;
+use App\Http\Resources\V1\UserResource;
 use App\Models\EmployeeProfile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -29,6 +31,7 @@ class EmployeeProfileController extends Controller
         return $this->success([
             'profile' => $profile,
             'completion' => $completion,
+            'user' => new UserResource($user),
         ], 'Employee profile retrieved successfully');
     }
 
@@ -50,7 +53,19 @@ class EmployeeProfileController extends Controller
             'education' => ['nullable', 'array'],
             'languages' => ['nullable', 'array'],
             'preferred_job_type' => ['nullable', 'string', 'max:50'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'profile_photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ]);
+
+        if ($request->hasFile('photo') || $request->hasFile('profile_photo')) {
+            /** @var IlluminateHttpUploadedFile $photoFile */
+            $photoFile = $request->file('photo') ?? $request->file('profile_photo');
+            if ($user->profile_photo_path && Storage::disk('public')->exists($user->profile_photo_path)) {
+                Storage::disk('public')->delete($user->profile_photo_path);
+            }
+            $savedPath = $photoFile->store('profile-photos', 'public');
+            $user->update(['profile_photo_path' => $savedPath]);
+        }
 
         /** @var EmployeeProfile $profile */
         $profile = $user->employeeProfile()->updateOrCreate(
@@ -68,6 +83,7 @@ class EmployeeProfileController extends Controller
         return $this->success([
             'profile' => $profile,
             'completion' => $completion,
+            'user' => new UserResource($user),
         ], 'Profile updated successfully and matching analyzed');
     }
 
@@ -125,6 +141,14 @@ class EmployeeProfileController extends Controller
             $earnedWeight += 10;
         } else {
             $missing[] = 'cv';
+        }
+
+        // Profile Photo (10%)
+        $totalWeight += 10;
+        if (! empty($user->profile_photo_path)) {
+            $earnedWeight += 10;
+        } else {
+            $missing[] = 'photo';
         }
 
         $percentage = (int) round(($earnedWeight / $totalWeight) * 100);

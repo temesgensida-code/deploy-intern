@@ -38,6 +38,8 @@ class ApplicationResource extends JsonResource
                 'email' => $user->email,
                 'username' => $user->username,
                 'cv_path' => $user->cv_path,
+                'profile_photo_path' => $user->profile_photo_path,
+                'profile_photo_url' => $user->profile_photo_url,
             ] : null,
             'job_post' => $jobPost ? [
                 'id' => $jobPost->id,

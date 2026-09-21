@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { X, Plus, Trash2 } from 'lucide-react'
+import { X, Plus, Trash2, Camera, Upload, Loader2, User as UserIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { getStorageUrl } from '@/lib/utils'
+import { userPhotoService } from '@/services/userPhotoService'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
@@ -74,6 +77,55 @@ export default function EditProfilePage() {
     (profile.languages || []).map(parseLanguageItem)
   )
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Profile photo must be smaller than 5MB')
+      return
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file (PNG, JPG, WEBP)')
+      return
+    }
+
+    const localUrl = URL.createObjectURL(file)
+    setPreviewUrl(localUrl)
+    setIsUploadingPhoto(true)
+
+    try {
+      await userPhotoService.uploadPhoto(file)
+      await useAuthStore.getState().getProfile()
+      toast.success('Profile photo uploaded successfully')
+    } catch (err: any) {
+      setPreviewUrl(null)
+      toast.error(err?.response?.data?.message || 'Failed to upload profile photo')
+    } finally {
+      setIsUploadingPhoto(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handlePhotoDelete = async () => {
+    setIsUploadingPhoto(true)
+    try {
+      await userPhotoService.deletePhoto()
+      await useAuthStore.getState().getProfile()
+      setPreviewUrl(null)
+      toast.success('Profile photo removed')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to remove profile photo')
+    } finally {
+      setIsUploadingPhoto(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   useEffect(() => {
     employeeFeedService
@@ -205,6 +257,83 @@ export default function EditProfilePage() {
               Update your professional profile details, background experiences, and verified skills.
             </p>
           </div>
+
+                    {/* Profile Photo Section */}
+          <section className={sectionCls}>
+            <div className="flex items-center gap-2 border-b border-border/50 pb-3">
+              <Camera className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold text-foreground tracking-tight">
+                Profile Photo
+              </h2>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-5 pt-1">
+              <div className="relative group">
+                <div className="h-24 w-24 rounded-2xl overflow-hidden border-2 border-dashed border-border/80 bg-muted/30 flex items-center justify-center flex-shrink-0 shadow-xs relative">
+                  {previewUrl || user?.profile_photo_url ? (
+                    <img
+                      src={previewUrl || getStorageUrl(user?.profile_photo_url)}
+                      alt={user?.name ?? 'Profile'}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-muted-foreground/60 gap-1">
+                      <UserIcon className="h-8 w-8 stroke-[1.5]" />
+                      <span className="text-[10px] font-medium uppercase tracking-wider">No Photo</span>
+                    </div>
+                  )}
+
+                  {isUploadingPhoto && (
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-xs flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-foreground" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    className="hidden"
+                    onChange={handlePhotoSelect}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploadingPhoto}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs h-8 px-3 gap-1.5"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    {user?.profile_photo_url || previewUrl ? 'Change Photo' : 'Upload Photo'}
+                  </Button>
+
+                  {(user?.profile_photo_url || previewUrl) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isUploadingPhoto}
+                      onClick={handlePhotoDelete}
+                      className="text-xs h-8 px-3 text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Upload a clear professional photo (JPG, PNG, or WEBP, up to 5MB).
+                  This will be shown on your profile and when employers or admins view your applications.
+                </p>
+              </div>
+            </div>
+          </section>
 
           {/* Personal Information */}
           <section className={sectionCls}>

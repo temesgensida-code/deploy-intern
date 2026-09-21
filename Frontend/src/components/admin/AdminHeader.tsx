@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Settings, LogOut, ChevronDown, ShieldCheck } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth'
 import { RefreshButton } from '@/components/RefreshButton'
+import { getStorageUrl } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import AdminNotificationDropdown from '@/components/admin/AdminNotificationDropdown'
 
@@ -56,9 +57,17 @@ export default function AdminHeader() {
             onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/70 transition-colors"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-semibold flex-shrink-0 shadow-2xs">
-              {getInitials(user?.name)}
-            </div>
+            {user?.profile_photo_url ? (
+              <img
+                src={getStorageUrl(user.profile_photo_url)}
+                alt={user?.name ?? 'Admin'}
+                className="h-8 w-8 rounded-full object-cover border border-border/70 flex-shrink-0 shadow-2xs"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-semibold flex-shrink-0 shadow-2xs">
+                {getInitials(user?.name)}
+              </div>
+            )}
             <div className="hidden sm:block text-left">
               <p className="text-xs font-medium text-foreground leading-tight">{user?.name ?? 'Admin'}</p>
               <p className="text-[11px] text-muted-foreground capitalize leading-tight">

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { RefreshButton } from '@/components/RefreshButton'
+import { getStorageUrl } from '@/lib/utils'
 import EmployerNotificationDropdown from '@/components/employer/EmployerNotificationDropdown'
 import EmployeeNotificationDropdown from '@/components/employee/EmployeeNotificationDropdown'
 import { useEmployerRealtimeNotifications } from '@/hooks/useEmployerRealtimeNotifications'
@@ -74,9 +75,17 @@ export default function EmployerHeader({ title }: EmployerHeaderProps) {
             onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white flex-shrink-0">
-              {getInitials(user?.name)}
-            </div>
+            {user?.profile_photo_url ? (
+              <img
+                src={getStorageUrl(user.profile_photo_url)}
+                alt={user?.name ?? 'User'}
+                className="h-8 w-8 rounded-full object-cover border border-border/70 flex-shrink-0"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white flex-shrink-0">
+                {getInitials(user?.name)}
+              </div>
+            )}
             <div className="hidden sm:block text-left">
               <p className="text-sm font-medium leading-tight">{user?.name ?? 'User'}</p>
               <p className="text-xs text-muted-foreground capitalize leading-tight">

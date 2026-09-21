@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\NewAccessToken;
@@ -22,7 +24,9 @@ use Laravel\Sanctum\NewAccessToken;
  * @property string $username
  * @property UserRole|null $role
  * @property bool $is_suspended
- * @property Carbon|null $email_verified_at
+ * @property Carbon|null 
+ * @property string|null 
+ * @property-read string|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
  * @property string|null $cv_path
@@ -52,6 +56,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'cv_path',
         'cv_original_name',
         'cv_uploaded_at',
+        'profile_photo_path',
         'email_verified_at',
     ];
 
@@ -209,5 +214,27 @@ class User extends Authenticatable implements MustVerifyEmail
         $token->save();
 
         return $newToken;
+    }
+
+    /**
+     * Get the publicly accessible URL for the user's profile photo.
+     *
+     * @return Attribute<string|null, never>
+     */
+    protected function profilePhotoUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function (): ?string {
+                if (! $this->profile_photo_path) {
+                    return null;
+                }
+
+                if (str_starts_with($this->profile_photo_path, 'http://') || str_starts_with($this->profile_photo_path, 'https://')) {
+                    return $this->profile_photo_path;
+                }
+
+                return Storage::disk('public')->url($this->profile_photo_path);
+            }
+        );
     }
 }

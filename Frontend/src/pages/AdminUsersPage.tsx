@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { getStorageUrl } from '@/lib/utils'
 import { usePageRefresh } from '@/hooks/usePageRefresh'
 
 interface EmployerInfo {
@@ -38,6 +39,8 @@ interface UserItem {
   is_suspended: boolean
   status: string
   email_verified_at: string | null
+  profile_photo_url?: string | null
+  profile_photo_path?: string | null
   created_at: string
   employer?: EmployerInfo
 }
@@ -298,9 +301,17 @@ export default function AdminUsersPage() {
                   <tr key={u.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-xs text-foreground border border-border/60">
-                          {u.name.charAt(0).toUpperCase()}
-                        </div>
+                        {u.profile_photo_url ? (
+                          <img
+                            src={getStorageUrl(u.profile_photo_url)}
+                            alt={u.name}
+                            className="w-8 h-8 rounded-full object-cover border border-border/60 flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-xs text-foreground border border-border/60 flex-shrink-0">
+                            {u.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <p className="font-semibold text-foreground">{u.name}</p>
                           <p className="text-[10px] text-muted-foreground">@{u.username}</p>

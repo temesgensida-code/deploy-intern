@@ -22,6 +22,7 @@ import { toast } from 'sonner'
 import EmployerSidebar from '@/components/employer/EmployerSidebar'
 import EmployerHeader from '@/components/employer/EmployerHeader'
 import { Button } from '@/components/ui/button'
+import { getStorageUrl } from '@/lib/utils'
 import api from '@/lib/api'
 import { usePageRefresh } from '@/hooks/usePageRefresh'
 
@@ -36,6 +37,8 @@ export interface ApplicantUser {
   id: number
   name: string
   email: string
+  profile_photo_url?: string | null
+  profile_photo_path?: string | null
 }
 
 export interface ApplicationItem {
@@ -442,13 +445,29 @@ export default function JobApplicantsPage() {
                     applicants.map((app) => {
                       const candidateName = app.user?.name || app.applicant?.name || 'Applicant'
                       const candidateEmail = app.user?.email || app.applicant?.email || 'N/A'
+                      const candidatePhoto = app.user?.profile_photo_url || app.applicant?.profile_photo_url
                       const config = statusConfig[app.status] || statusConfig.submitted
 
                       return (
                         <tr key={app.id} className="hover:bg-muted/30 transition-colors">
                           <td className="px-5 py-3.5">
-                            <div className="font-medium text-foreground">{candidateName}</div>
-                            <div className="text-[11px] text-muted-foreground">{candidateEmail}</div>
+                            <div className="flex items-center gap-3">
+                              {candidatePhoto ? (
+                                <img
+                                  src={getStorageUrl(candidatePhoto)}
+                                  alt={candidateName}
+                                  className="h-9 w-9 rounded-full object-cover border border-border/70 flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted font-bold text-xs text-foreground border border-border/70 flex-shrink-0">
+                                  {candidateName.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="font-medium text-foreground truncate">{candidateName}</div>
+                                <div className="text-[11px] text-muted-foreground truncate">{candidateEmail}</div>
+                              </div>
+                            </div>
                           </td>
 
                           <td className="px-5 py-3.5 text-muted-foreground">

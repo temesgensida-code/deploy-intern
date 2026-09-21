@@ -27,6 +27,7 @@ import { toast } from 'sonner'
 import EmployerSidebar from '@/components/employer/EmployerSidebar'
 import EmployerHeader from '@/components/employer/EmployerHeader'
 import { Button } from '@/components/ui/button'
+import { getStorageUrl } from '@/lib/utils'
 import api from '@/lib/api'
 
 export type ApplicationStatusType =
@@ -42,6 +43,8 @@ interface ApplicantUser {
   email: string
   username: string
   cv_path?: string | null
+  profile_photo_url?: string | null
+  profile_photo_path?: string | null
 }
 
 interface JobPostInfo {
@@ -422,9 +425,17 @@ export default function ApplicantDetailsPage() {
 
                   {/* Avatar & Basic Info */}
                   <div className="flex items-center gap-3.5 pb-2">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-foreground border border-border/70 font-bold text-sm">
-                      {getInitials(application.applicant?.name)}
-                    </div>
+                    {application.applicant?.profile_photo_url ? (
+                      <img
+                        src={getStorageUrl(application.applicant.profile_photo_url)}
+                        alt={application.applicant.name}
+                        className="h-12 w-12 rounded-xl object-cover border border-border/70 flex-shrink-0 shadow-2xs"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-foreground border border-border/70 font-bold text-sm flex-shrink-0">
+                        {getInitials(application.applicant?.name)}
+                      </div>
+                    )}
 
                     <div>
                       <h4 className="font-semibold text-foreground text-sm">

@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query'
 import EmployerSidebar from '@/components/employer/EmployerSidebar'
 import EmployerHeader from '@/components/employer/EmployerHeader'
 import { Button } from '@/components/ui/button'
+import { getStorageUrl } from '@/lib/utils'
 import api from '@/lib/api'
 import { usePageRefresh } from '@/hooks/usePageRefresh'
 
@@ -41,11 +42,15 @@ interface ApplicantItem {
     id: number
     name: string
     email: string
+    profile_photo_url?: string | null
+    profile_photo_path?: string | null
   }
   applicant?: {
     id: number
     name: string
     email: string
+    profile_photo_url?: string | null
+    profile_photo_path?: string | null
   }
   job_post?: {
     id: number
@@ -509,6 +514,7 @@ export default function EmployerDashboardPage() {
                 ) : (
                   recentApplicants.map((app) => {
                     const applicantName = app.user?.name || app.applicant?.name || 'Applicant'
+                    const photoUrl = app.user?.profile_photo_url || app.applicant?.profile_photo_url
                     const jobTitle = app.job_post?.title || jobsList.find((j) => j.id === topJobId)?.title || 'Job Listing'
                     const dateFormatted = app.created_at ? new Date(app.created_at).toLocaleDateString() : 'Recent'
 
@@ -517,17 +523,30 @@ export default function EmployerDashboardPage() {
                         key={app.id}
                         className="flex flex-col gap-2 rounded-xl border border-border/60 bg-muted/20 p-3.5 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/40 transition-colors"
                       >
-                        <div>
-                          <Link
-                            to={`/applicant-details?id=${app.id}`}
-                            className="font-medium text-foreground text-xs hover:underline"
-                          >
-                            {applicantName}
-                          </Link>
+                        <div className="flex items-center gap-3">
+                          {photoUrl ? (
+                            <img
+                              src={getStorageUrl(photoUrl)}
+                              alt={applicantName}
+                              className="h-8 w-8 rounded-full object-cover border border-border/70 flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted font-semibold text-xs text-foreground border border-border/70 flex-shrink-0">
+                              {applicantName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <Link
+                              to={`/applicant-details?id=${app.id}`}
+                              className="font-medium text-foreground text-xs hover:underline"
+                            >
+                              {applicantName}
+                            </Link>
 
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
-                            {jobTitle}
-                          </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              {jobTitle}
+                            </p>
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-3">

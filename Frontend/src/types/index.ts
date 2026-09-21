@@ -9,6 +9,8 @@ export interface User {
   role_label?: string
   is_suspended?: boolean
   email_notifications_enabled?: boolean
+  profile_photo_path?: string | null
+  profile_photo_url?: string | null
   status?: string
   email_verified_at: string | null
   created_at?: string
