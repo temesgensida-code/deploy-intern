@@ -24,5 +24,16 @@ class AdminUserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        User::updateOrCreate(
+            ['email' => 'lidiyanaa98@gmail.com'],
+            [
+                'name' => 'Lidiya',
+                'username' => 'lidiyanaa98',
+                'password' => Hash::make('tatu2471'),
+                'role' => UserRole::ADMIN,
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }
