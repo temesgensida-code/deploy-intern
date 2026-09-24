@@ -80,6 +80,7 @@ class JobPostPolicy
                     JobStatus::CLOSED,
                     JobStatus::EXPIRED,
                     JobStatus::PENDING_APPROVAL,
+                    JobStatus::PUBLISHED,
                 ], true);
         }
 

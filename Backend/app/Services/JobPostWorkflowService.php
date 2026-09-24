@@ -20,7 +20,7 @@ class JobPostWorkflowService
     }
 
     /**
-     * Submit a draft or rejected job post for admin review.
+     * Submit a draft, rejected, closed, expired, pending, or published job post for admin review.
      */
     public function submitForReview(JobPost $job): JobPost
     {
@@ -30,8 +30,9 @@ class JobPostWorkflowService
             JobStatus::CLOSED,
             JobStatus::EXPIRED,
             JobStatus::PENDING_APPROVAL,
+            JobStatus::PUBLISHED,
         ], true)) {
-            throw new InvalidArgumentException("Cannot submit job post in state '{$job->status->value}'. Only draft, rejected, closed, expired, or pending posts can be submitted.");
+            throw new InvalidArgumentException("Cannot submit job post in state '{$job->status->value}'. Only draft, rejected, closed, expired, pending, or published posts can be submitted.");
         }
 
         $job->update([
@@ -114,27 +115,20 @@ class JobPostWorkflowService
      */
     public function reopen(JobPost $job): JobPost
     {
-        if ($job->status !== JobStatus::CLOSED) {
-            throw new InvalidArgumentException("Cannot reopen job post in state '{$job->status->value}'. Only closed posts can be reopened.");
+        if (! in_array($job->status, [JobStatus::CLOSED, JobStatus::EXPIRED], true)) {
+            throw new InvalidArgumentException("Cannot reopen job post in state '{$job->status->value}'. Only closed or expired posts can be reopened.");
         }
 
         $job->update([
             'status' => JobStatus::PUBLISHED,
+            'published_at' => now(),
+            'expires_at' => now()->addDays(30),
+            'rejection_reason' => null,
         ]);
 
-        return $job;
-    }
+        // Re-trigger job matching analysis
+        AnalyzeJobPostMatchesJob::dispatch($job);
 
-    /**
-     * Automatically mark expired published job posts.
-     */
-    public function expireOverdueJobs(): int
-    {
-        return JobPost::where('status', JobStatus::PUBLISHED)
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<=', now())
-            ->update([
-                'status' => JobStatus::EXPIRED,
-            ]);
+        return $job;
     }
 }

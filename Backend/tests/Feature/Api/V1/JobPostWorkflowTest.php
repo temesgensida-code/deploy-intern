@@ -19,93 +19,99 @@ class JobPostWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-    private User $admin;
+    protected User $employerUser;
 
-    private User $employerUser;
+    protected Employer $employer;
 
-    private Employer $employer;
+    protected User $admin;
 
-    private Category $category;
+    protected Category $category;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->admin = User::factory()->create([
-            'role' => UserRole::ADMIN->value,
-            'email_verified_at' => now(),
-        ]);
-
         $this->employerUser = User::factory()->create([
-            'role' => UserRole::EMPLOYER->value,
+            'role' => UserRole::EMPLOYER,
             'email_verified_at' => now(),
         ]);
 
         $this->employer = Employer::factory()->create([
             'user_id' => $this->employerUser->id,
+            'approval_status' => 'approved',
         ]);
 
-        $this->category = Category::factory()->create();
+        $this->admin = User::factory()->create([
+            'role' => UserRole::ADMIN,
+            'email_verified_at' => now(),
+        ]);
+
+        $this->category = Category::factory()->create([
+            'name' => 'Engineering',
+            'slug' => 'engineering',
+        ]);
     }
 
     public function test_employer_can_create_job_post_draft(): void
     {
-        $payload = [
-            'category_id' => $this->category->id,
-            'title' => 'Senior Backend Developer',
-            'description' => 'We are seeking a senior backend developer skilled in Laravel and clean architecture.',
-            'requirements' => ['5+ years PHP experience', 'Laravel expertise'],
-            'responsibilities' => ['Design APIs', 'Write unit tests'],
-            'job_type' => JobType::FULL_TIME->value,
-            'experience_level' => ExperienceLevel::SENIOR->value,
-            'location' => 'Addis Ababa',
-            'salary_min' => 60000,
-            'salary_max' => 90000,
-            'salary_currency' => 'USD',
-            'is_remote' => true,
-            'submit_now' => false,
-        ];
-
         $response = $this->actingAs($this->employerUser)
-            ->postJson('/api/v1/employer/jobs', $payload);
+            ->postJson('/api/v1/employer/jobs', [
+                'category_id' => $this->category->id,
+                'title' => 'Software Engineer',
+                'description' => 'We are seeking a talented engineer to join our team.',
+                'job_type' => JobType::FULL_TIME->value,
+                'experience_level' => ExperienceLevel::MID->value,
+                'location' => 'Addis Ababa',
+                'is_remote' => false,
+                'salary_min' => 1000,
+                'salary_max' => 2000,
+                'salary_currency' => 'USD',
+                'requirements' => ['PHP', 'Laravel', 'PostgreSQL'],
+                'responsibilities' => ['Build APIs', 'Write tests'],
+                'submit_now' => false,
+            ]);
 
         $response->assertStatus(201)
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'title' => 'Senior Backend Developer',
+                    'title' => 'Software Engineer',
                     'status' => JobStatus::DRAFT->value,
-                    'employer_id' => $this->employer->id,
                 ],
             ]);
 
         $this->assertDatabaseHas('job_posts', [
-            'title' => 'Senior Backend Developer',
+            'title' => 'Software Engineer',
             'status' => JobStatus::DRAFT->value,
+            'employer_id' => $this->employer->id,
         ]);
     }
 
     public function test_employer_can_create_and_submit_job_post_immediately(): void
     {
-        $payload = [
-            'category_id' => $this->category->id,
-            'title' => 'Frontend React Engineer',
-            'description' => 'Looking for a passionate frontend engineer to build responsive modern UI components.',
-            'job_type' => JobType::REMOTE->value,
-            'experience_level' => ExperienceLevel::MID->value,
-            'submit_now' => true,
-        ];
-
         $response = $this->actingAs($this->employerUser)
-            ->postJson('/api/v1/employer/jobs', $payload);
+            ->postJson('/api/v1/employer/jobs', [
+                'category_id' => $this->category->id,
+                'title' => 'Product Manager',
+                'description' => 'Lead product strategy and execution.',
+                'job_type' => JobType::FULL_TIME->value,
+                'experience_level' => ExperienceLevel::SENIOR->value,
+                'submit_now' => true,
+            ]);
 
         $response->assertStatus(201)
             ->assertJson([
                 'success' => true,
                 'data' => [
+                    'title' => 'Product Manager',
                     'status' => JobStatus::PENDING_APPROVAL->value,
                 ],
             ]);
+
+        $this->assertDatabaseHas('job_posts', [
+            'title' => 'Product Manager',
+            'status' => JobStatus::PENDING_APPROVAL->value,
+        ]);
     }
 
     public function test_employer_can_submit_draft_job_post_for_review(): void
@@ -123,16 +129,19 @@ class JobPostWorkflowTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'id' => $job->id,
                     'status' => JobStatus::PENDING_APPROVAL->value,
                 ],
             ]);
+
+        $this->assertDatabaseHas('job_posts', [
+            'id' => $job->id,
+            'status' => JobStatus::PENDING_APPROVAL->value,
+        ]);
     }
 
     public function test_admin_can_view_pending_job_posts(): void
     {
-        JobPost::factory()->pending()->create([
-            'employer_id' => $this->employer->id,
+        JobPost::factory()->pending()->count(3)->create([
             'category_id' => $this->category->id,
         ]);
 
@@ -140,7 +149,10 @@ class JobPostWorkflowTest extends TestCase
             ->getJson('/api/v1/admin/jobs/pending');
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.data.0.status', JobStatus::PENDING_APPROVAL->value);
+            ->assertJson([
+                'success' => true,
+            ])
+            ->assertJsonCount(3, 'data.data');
     }
 
     public function test_admin_can_approve_pending_job_post(): void
@@ -151,13 +163,14 @@ class JobPostWorkflowTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->admin)
-            ->postJson("/api/v1/admin/jobs/{$job->id}/approve");
+            ->postJson("/api/v1/admin/jobs/{$job->id}/approve", [
+                'expiration_days' => 45,
+            ]);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'id' => $job->id,
                     'status' => JobStatus::PUBLISHED->value,
                 ],
             ]);
@@ -166,6 +179,9 @@ class JobPostWorkflowTest extends TestCase
             'id' => $job->id,
             'status' => JobStatus::PUBLISHED->value,
         ]);
+
+        $this->assertNotNull($job->fresh()->published_at);
+        $this->assertNotNull($job->fresh()->expires_at);
     }
 
     public function test_admin_can_reject_pending_job_post_with_reason(): void
@@ -177,18 +193,23 @@ class JobPostWorkflowTest extends TestCase
 
         $response = $this->actingAs($this->admin)
             ->postJson("/api/v1/admin/jobs/{$job->id}/reject", [
-                'reason' => 'Description lacks required job qualification details.',
+                'reason' => 'Job description does not meet platform quality guidelines.',
             ]);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'id' => $job->id,
                     'status' => JobStatus::REJECTED->value,
-                    'rejection_reason' => 'Description lacks required job qualification details.',
+                    'rejection_reason' => 'Job description does not meet platform quality guidelines.',
                 ],
             ]);
+
+        $this->assertDatabaseHas('job_posts', [
+            'id' => $job->id,
+            'status' => JobStatus::REJECTED->value,
+            'rejection_reason' => 'Job description does not meet platform quality guidelines.',
+        ]);
     }
 
     public function test_employer_can_view_rejection_reason_for_rejected_job_posts(): void
@@ -403,6 +424,52 @@ class JobPostWorkflowTest extends TestCase
 
         $this->assertDatabaseHas('job_posts', [
             'id' => $job->id,
+            'status' => JobStatus::PENDING_APPROVAL->value,
+        ]);
+    }
+
+    public function test_employer_can_submit_published_job_post_to_repost_for_review(): void
+    {
+        $job = JobPost::factory()->published()->create([
+            'employer_id' => $this->employer->id,
+            'category_id' => $this->category->id,
+        ]);
+
+        $response = $this->actingAs($this->employerUser)
+            ->postJson("/api/v1/employer/jobs/{$job->id}/submit");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.status', JobStatus::PENDING_APPROVAL->value);
+
+        $this->assertDatabaseHas('job_posts', [
+            'id' => $job->id,
+            'status' => JobStatus::PENDING_APPROVAL->value,
+            'rejection_reason' => null,
+        ]);
+    }
+
+    public function test_employer_can_update_and_submit_published_job_post_via_submit_now(): void
+    {
+        $job = JobPost::factory()->published()->create([
+            'employer_id' => $this->employer->id,
+            'category_id' => $this->category->id,
+            'title' => 'Old Published Title',
+        ]);
+
+        $response = $this->actingAs($this->employerUser)
+            ->putJson("/api/v1/employer/jobs/{$job->id}", [
+                'title' => 'New Reposted Title',
+                'description' => 'Updated content for reposting this role properly.',
+                'submit_now' => true,
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.title', 'New Reposted Title')
+            ->assertJsonPath('data.status', JobStatus::PENDING_APPROVAL->value);
+
+        $this->assertDatabaseHas('job_posts', [
+            'id' => $job->id,
+            'title' => 'New Reposted Title',
             'status' => JobStatus::PENDING_APPROVAL->value,
         ]);
     }

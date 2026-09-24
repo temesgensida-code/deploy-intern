@@ -45,10 +45,7 @@ class JobPostController extends Controller
     {
         $this->authorize('view', $jobPost);
 
-        if ($jobPost->status === JobStatus::PUBLISHED) {
-            $jobPost->increment('views_count');
-        }
-
+        $jobPost->increment('views_count');
         $jobPost->load(['employer', 'category']);
 
         return $this->success(
@@ -58,11 +55,12 @@ class JobPostController extends Controller
     }
 
     /**
-     * Display job posts owned by the authenticated employer.
+     * Display a listing of job posts owned by authenticated employer.
      */
     public function employerIndex(Request $request): JsonResponse
     {
-        $employer = $request->user()->employer;
+        $user = $request->user();
+        $employer = $user?->employer;
 
         if (! $employer) {
             return $this->error('Employer profile not found', 404);
@@ -81,19 +79,21 @@ class JobPostController extends Controller
     }
 
     /**
-     * Store a newly created job post in storage.
+     * Store a newly created job post by authenticated employer.
      */
     public function store(StoreJobPostRequest $request, JobPostWorkflowService $workflowService): JsonResponse
     {
         $this->authorize('create', JobPost::class);
 
-        $employer = $request->user()->employer;
+        $user = $request->user();
+        $employer = $user?->employer;
 
         if (! $employer) {
-            return $this->error('Please complete your company profile before creating a job post.', 400);
+            return $this->error('Employer profile not found. Please complete your company profile before posting jobs.', 422);
         }
 
         $validated = $request->validated();
+        $submitNow = $request->boolean('submit_now');
         unset($validated['submit_now']);
 
         if (isset($validated['requirements']) && is_string($validated['requirements'])) {
@@ -109,7 +109,7 @@ class JobPostController extends Controller
             'status' => JobStatus::DRAFT,
         ]);
 
-        if ($request->boolean('submit_now')) {
+        if ($submitNow) {
             $job = $workflowService->submitForReview($job);
         }
 
@@ -141,11 +141,13 @@ class JobPostController extends Controller
     /**
      * Update the specified job post.
      */
-    public function update(UpdateJobPostRequest $request, JobPost $jobPost): JsonResponse
+    public function update(UpdateJobPostRequest $request, JobPost $jobPost, JobPostWorkflowService $workflowService): JsonResponse
     {
         $this->authorize('update', $jobPost);
 
         $validated = $request->validated();
+        $submitNow = $request->boolean('submit_now');
+        unset($validated['submit_now']);
 
         if (isset($validated['deadline']) && ! isset($validated['expires_at'])) {
             $validated['expires_at'] = $validated['deadline'];
@@ -160,11 +162,18 @@ class JobPostController extends Controller
         }
 
         $jobPost->update($validated);
+
+        if ($submitNow) {
+            $jobPost = $workflowService->submitForReview($jobPost);
+        }
+
         $jobPost->load(['employer', 'category']);
 
         return $this->success(
             new JobPostResource($jobPost),
-            'Job post updated successfully'
+            $submitNow
+                ? 'Job post updated and submitted for review successfully'
+                : 'Job post updated successfully'
         );
     }
 

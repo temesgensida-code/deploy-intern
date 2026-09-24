@@ -68,6 +68,7 @@ class UpdateJobPostRequest extends FormRequest
             'is_remote' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date'],
             'deadline' => ['nullable', 'date'],
+            'submit_now' => ['nullable', 'boolean'],
         ];
     }
 }

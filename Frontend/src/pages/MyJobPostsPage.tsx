@@ -78,6 +78,7 @@ function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     Approved: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
     Pending: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+    Draft: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20',
     Rejected: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20',
     Closed: 'bg-muted text-muted-foreground border border-border',
   }
@@ -122,6 +123,8 @@ export default function MyJobPostsPage() {
               normalizedStatus = 'Rejected'
             } else if (s === 'closed') {
               normalizedStatus = 'Closed'
+            } else if (s === 'draft') {
+              normalizedStatus = 'Draft'
             } else if (s === 'pending_approval' || s === 'pending') {
               normalizedStatus = 'Pending'
             } else if (j.status) {
@@ -221,7 +224,7 @@ export default function MyJobPostsPage() {
     try {
       setResubmittingId(jobId)
       await api.post(`/employer/jobs/${jobId}/submit`)
-      toast.success('Job post resubmitted for admin review successfully!')
+      toast.success('Job post submitted for admin review successfully!')
       setJobs((prev) =>
         prev.map((j) =>
           j.id === jobId
@@ -233,8 +236,8 @@ export default function MyJobPostsPage() {
         setSelectedRejectionJob(null)
       }
     } catch (err: any) {
-      console.error('Failed to resubmit job post:', err)
-      toast.error(err.response?.data?.message || 'Failed to resubmit job post.')
+      console.error('Failed to submit job post:', err)
+      toast.error(err.response?.data?.message || 'Failed to submit job post.')
     } finally {
       setResubmittingId(null)
     }
@@ -321,8 +324,7 @@ export default function MyJobPostsPage() {
                   {rejectedCount > 0 ? 'Rejected Posts' : 'Total Applications'}
                 </span>
                 <div className="p-2 rounded-lg bg-muted text-foreground">
-                  {rejectedCount > 0 ? (
-                    <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                  {rejectedCount > 0 ? (                    <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                   ) : (
                     <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   )}
@@ -365,6 +367,7 @@ export default function MyJobPostsPage() {
                 <option value="All Status">All Statuses</option>
                 <option value="Approved">Approved</option>
                 <option value="Pending">Pending</option>
+                <option value="Draft">Draft</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Closed">Closed</option>
               </select>
@@ -515,7 +518,23 @@ export default function MyJobPostsPage() {
                                     )}
                                     Repost
                                   </Button>
-                                ) : (
+                                ) : job.status === 'Draft' ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={resubmittingId === job.id}
+                                    onClick={() => handleResubmitJob(job.id)}
+                                    className="h-7 px-2 text-xs text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+                                    title="Post this draft for admin review"
+                                  >
+                                    {resubmittingId === job.id ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                                    ) : (
+                                      <Send className="h-3.5 w-3.5 mr-1" />
+                                    )}
+                                    Post Job
+                                  </Button>
+                                ) : job.status === 'Approved' ? (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -526,7 +545,7 @@ export default function MyJobPostsPage() {
                                     <XCircle className="h-3.5 w-3.5 mr-1" />
                                     Close
                                   </Button>
-                                )}
+                                ) : null}
                               </>
                             )}
                           </div>

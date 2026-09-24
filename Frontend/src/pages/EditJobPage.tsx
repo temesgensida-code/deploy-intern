@@ -266,8 +266,11 @@ export default function EditJobPage() {
       await api.post(`/employer/jobs/${jobId}/submit`)
 
       const isClosedState = jobStatusRaw === 'closed' || jobStatusRaw === 'expired'
+      const isPubState = jobStatusRaw === 'published'
       const successText = isClosedState
-        ? 'Job post updated and submitted for review to be reposted!'
+        ? 'Job post updated and submitted to be reposted!'
+        : isPubState
+        ? 'Job post updated and reposted for review successfully!'
         : 'Job post updated and resubmitted for admin review!'
 
       toast.success(successText)
@@ -319,6 +322,14 @@ export default function EditJobPage() {
   const isRejected = jobStatusRaw === 'rejected'
   const isPending = jobStatusRaw === 'pending_approval'
   const isPublished = jobStatusRaw === 'published'
+
+  const repostButtonLabel = isClosed
+    ? 'Save & Repost Job'
+    : isRejected
+    ? 'Save & Resubmit for Review'
+    : isPublished
+    ? 'Save & Repost'
+    : 'Save & Submit for Review'
 
   return (
     <div className="h-screen flex overflow-hidden bg-background">
@@ -374,13 +385,17 @@ export default function EditJobPage() {
                 </p>
               </div>
 
-              {jobId && (isClosed || isRejected) && (
+              {jobId && (
                 <Button
                   size="sm"
                   disabled={isSubmitting}
                   onClick={handleResubmitOrRepost}
                   className={`rounded-lg h-8 px-3.5 text-xs font-medium text-white hover:opacity-90 self-start sm:self-auto gap-1.5 ${
-                    isClosed ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'
+                    isClosed
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : isPublished
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-amber-600 hover:bg-amber-700'
                   }`}
                 >
                   {isSubmitting ? (
@@ -390,7 +405,7 @@ export default function EditJobPage() {
                   ) : (
                     <Send className="h-3.5 w-3.5" />
                   )}
-                  {isClosed ? 'Save & Repost Job' : 'Save & Resubmit for Review'}
+                  {repostButtonLabel}
                 </Button>
               )}
             </div>
@@ -559,7 +574,7 @@ export default function EditJobPage() {
                 <h3 className="text-sm font-semibold text-foreground">Location & Compensation</h3>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="location" className="text-xs font-medium text-muted-foreground">
                     Location
@@ -569,13 +584,15 @@ export default function EditJobPage() {
                     name="location"
                     value={job.location}
                     onChange={handleChange}
-                    placeholder="e.g. Addis Ababa, Ethiopia or Remote"
+                    placeholder="e.g. Addis Ababa, Ethiopia"
                     className="w-full rounded-lg border border-border/80 bg-muted/30 px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="workMode" className="text-xs font-medium text-muted-foreground">Work Location</Label>
+                  <Label htmlFor="workMode" className="text-xs font-medium text-muted-foreground">
+                    Workplace Type
+                  </Label>
                   <select
                     id="workMode"
                     name="workMode"
@@ -583,14 +600,12 @@ export default function EditJobPage() {
                     onChange={handleChange}
                     className="w-full rounded-lg border border-border/80 bg-muted/30 px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option>On-site</option>
-                    <option>Remote</option>
-                    <option>Hybrid</option>
+                    <option value="On-site">On-site</option>
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-3 pt-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="salary_min" className="text-xs font-medium text-muted-foreground">
                     Salary Minimum
@@ -678,7 +693,7 @@ export default function EditJobPage() {
                       rows={4}
                       value={job.responsibilities}
                       onChange={handleChange}
-                      placeholder="Design and implement scalable APIs\nWrite unit and integration tests\nCollaborate with cross-functional teams"
+                      placeholder="Design and implement scalable APIs&#10;Write unit and integration tests&#10;Collaborate with cross-functional teams"
                       className="w-full resize-none rounded-lg border border-border/80 bg-muted/30 px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
                     />
                   </div>
@@ -693,7 +708,7 @@ export default function EditJobPage() {
                       rows={4}
                       value={job.requirements}
                       onChange={handleChange}
-                      placeholder="3+ years of professional experience\nStrong proficiency in TypeScript and React\nFamiliarity with REST APIs"
+                      placeholder="3+ years of professional experience&#10;Strong proficiency in TypeScript and React&#10;Familiarity with REST APIs"
                       className="w-full resize-none rounded-lg border border-border/80 bg-muted/30 px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
                     />
                   </div>
@@ -735,7 +750,7 @@ export default function EditJobPage() {
                 <div>
                   <p className="font-semibold">Listing is Published & Active</p>
                   <p className="mt-0.5 text-emerald-700/90 dark:text-emerald-400/90">
-                    Updates saved here will immediately reflect on the public listing. Closing the job post will hide it from the search directory.
+                    You can save updates to keep the listing live, or choose <strong>Save & Repost</strong> to submit the revised position for review.
                   </p>
                 </div>
               </div>
@@ -777,14 +792,18 @@ export default function EditJobPage() {
                 </Button>
               )}
 
-              {jobId && (isClosed || isRejected) && (
+              {jobId && (
                 <Button
                   type="button"
                   size="sm"
                   disabled={isSubmitting}
                   onClick={handleResubmitOrRepost}
                   className={`rounded-lg h-8 px-3.5 text-xs font-medium text-white hover:opacity-90 gap-1.5 ${
-                    isClosed ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'
+                    isClosed
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : isPublished
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-amber-600 hover:bg-amber-700'
                   }`}
                 >
                   {isSubmitting ? (
@@ -794,7 +813,7 @@ export default function EditJobPage() {
                   ) : (
                     <Send className="h-3.5 w-3.5" />
                   )}
-                  {isClosed ? 'Save & Repost Job' : 'Save & Resubmit'}
+                  {repostButtonLabel}
                 </Button>
               )}
 
