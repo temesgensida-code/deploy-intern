@@ -61,8 +61,7 @@ class JobPostPolicy
         }
 
         if ($user->role === UserRole::EMPLOYER && $user->employer !== null) {
-            return $user->employer->id === $jobPost->employer_id
-                && in_array($jobPost->status, [JobStatus::DRAFT, JobStatus::REJECTED], true);
+            return $user->employer->id === $jobPost->employer_id;
         }
 
         return false;
@@ -75,7 +74,30 @@ class JobPostPolicy
     {
         if ($user->role === UserRole::EMPLOYER && $user->employer !== null) {
             return $user->employer->id === $jobPost->employer_id
-                && in_array($jobPost->status, [JobStatus::DRAFT, JobStatus::REJECTED], true);
+                && in_array($jobPost->status, [
+                    JobStatus::DRAFT,
+                    JobStatus::REJECTED,
+                    JobStatus::CLOSED,
+                    JobStatus::EXPIRED,
+                    JobStatus::PENDING_APPROVAL,
+                ], true);
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine whether the user can reopen the job post.
+     */
+    public function reopen(User $user, JobPost $jobPost): bool
+    {
+        if ($user->role === UserRole::ADMIN) {
+            return true;
+        }
+
+        if ($user->role === UserRole::EMPLOYER && $user->employer !== null) {
+            return $user->employer->id === $jobPost->employer_id
+                && in_array($jobPost->status, [JobStatus::CLOSED, JobStatus::EXPIRED], true);
         }
 
         return false;

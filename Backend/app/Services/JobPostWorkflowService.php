@@ -24,8 +24,14 @@ class JobPostWorkflowService
      */
     public function submitForReview(JobPost $job): JobPost
     {
-        if (! in_array($job->status, [JobStatus::DRAFT, JobStatus::REJECTED], true)) {
-            throw new InvalidArgumentException("Cannot submit job post in state '{$job->status->value}'. Only draft or rejected posts can be submitted.");
+        if (! in_array($job->status, [
+            JobStatus::DRAFT,
+            JobStatus::REJECTED,
+            JobStatus::CLOSED,
+            JobStatus::EXPIRED,
+            JobStatus::PENDING_APPROVAL,
+        ], true)) {
+            throw new InvalidArgumentException("Cannot submit job post in state '{$job->status->value}'. Only draft, rejected, closed, expired, or pending posts can be submitted.");
         }
 
         $job->update([

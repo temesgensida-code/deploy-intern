@@ -342,4 +342,104 @@ class JobPostWorkflowTest extends TestCase
             'id' => $job->id,
         ]);
     }
+
+    public function test_employer_can_update_published_job_post(): void
+    {
+        $job = JobPost::factory()->published()->create([
+            'employer_id' => $this->employer->id,
+            'category_id' => $this->category->id,
+            'title' => 'Original Title',
+        ]);
+
+        $response = $this->actingAs($this->employerUser)
+            ->putJson("/api/v1/employer/jobs/{$job->id}", [
+                'title' => 'Updated Title',
+                'description' => 'Updated description with sufficient text length.',
+                'requirements' => "Skill 1\nSkill 2\nSkill 3",
+                'responsibilities' => "Task 1\nTask 2",
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.title', 'Updated Title')
+            ->assertJsonPath('data.requirements.0', 'Skill 1')
+            ->assertJsonPath('data.responsibilities.1', 'Task 2');
+
+        $this->assertDatabaseHas('job_posts', [
+            'id' => $job->id,
+            'title' => 'Updated Title',
+        ]);
+    }
+
+    public function test_employer_can_update_pending_job_post(): void
+    {
+        $job = JobPost::factory()->pending()->create([
+            'employer_id' => $this->employer->id,
+            'category_id' => $this->category->id,
+            'title' => 'Pending Job Title',
+        ]);
+
+        $response = $this->actingAs($this->employerUser)
+            ->putJson("/api/v1/employer/jobs/{$job->id}", [
+                'title' => 'Updated Pending Title',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.title', 'Updated Pending Title');
+    }
+
+    public function test_employer_can_submit_closed_job_post_to_repost(): void
+    {
+        $job = JobPost::factory()->create([
+            'employer_id' => $this->employer->id,
+            'category_id' => $this->category->id,
+            'status' => JobStatus::CLOSED,
+        ]);
+
+        $response = $this->actingAs($this->employerUser)
+            ->postJson("/api/v1/employer/jobs/{$job->id}/submit");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.status', JobStatus::PENDING_APPROVAL->value);
+
+        $this->assertDatabaseHas('job_posts', [
+            'id' => $job->id,
+            'status' => JobStatus::PENDING_APPROVAL->value,
+        ]);
+    }
+
+    public function test_employer_can_reopen_closed_job_post(): void
+    {
+        $job = JobPost::factory()->create([
+            'employer_id' => $this->employer->id,
+            'category_id' => $this->category->id,
+            'status' => JobStatus::CLOSED,
+        ]);
+
+        $response = $this->actingAs($this->employerUser)
+            ->postJson("/api/v1/employer/jobs/{$job->id}/reopen");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.status', JobStatus::PUBLISHED->value);
+
+        $this->assertDatabaseHas('job_posts', [
+            'id' => $job->id,
+            'status' => JobStatus::PUBLISHED->value,
+        ]);
+    }
+
+    public function test_employer_cannot_update_another_employers_job_post(): void
+    {
+        $otherEmployer = Employer::factory()->create();
+        $job = JobPost::factory()->published()->create([
+            'employer_id' => $otherEmployer->id,
+            'category_id' => $this->category->id,
+        ]);
+
+        $response = $this->actingAs($this->employerUser)
+            ->putJson("/api/v1/employer/jobs/{$job->id}", [
+                'title' => 'Malicious Update',
+            ]);
+
+        $response->assertStatus(403);
+    }
 }

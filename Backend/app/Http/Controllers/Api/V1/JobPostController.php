@@ -124,13 +124,42 @@ class JobPostController extends Controller
     }
 
     /**
+     * Display the specified job post detail for the employer.
+     */
+    public function employerShow(JobPost $jobPost): JsonResponse
+    {
+        $this->authorize('view', $jobPost);
+
+        $jobPost->load(['employer', 'category']);
+
+        return $this->success(
+            new JobPostResource($jobPost),
+            'Job post retrieved successfully'
+        );
+    }
+
+    /**
      * Update the specified job post.
      */
     public function update(UpdateJobPostRequest $request, JobPost $jobPost): JsonResponse
     {
         $this->authorize('update', $jobPost);
 
-        $jobPost->update($request->validated());
+        $validated = $request->validated();
+
+        if (isset($validated['deadline']) && ! isset($validated['expires_at'])) {
+            $validated['expires_at'] = $validated['deadline'];
+        }
+        unset($validated['deadline']);
+
+        if (isset($validated['requirements']) && is_string($validated['requirements'])) {
+            $validated['requirements'] = array_values(array_filter(array_map('trim', explode("\n", $validated['requirements']))));
+        }
+        if (isset($validated['responsibilities']) && is_string($validated['responsibilities'])) {
+            $validated['responsibilities'] = array_values(array_filter(array_map('trim', explode("\n", $validated['responsibilities']))));
+        }
+
+        $jobPost->update($validated);
         $jobPost->load(['employer', 'category']);
 
         return $this->success(
@@ -173,6 +202,26 @@ class JobPostController extends Controller
             return $this->success(
                 new JobPostResource($updated),
                 'Job post closed successfully'
+            );
+        } catch (InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * Reopen a closed job post.
+     */
+    public function reopen(JobPost $jobPost, JobPostWorkflowService $workflowService): JsonResponse
+    {
+        $this->authorize('reopen', $jobPost);
+
+        try {
+            $updated = $workflowService->reopen($jobPost);
+            $updated->load(['employer', 'category']);
+
+            return $this->success(
+                new JobPostResource($updated),
+                'Job post reopened successfully'
             );
         } catch (InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 422);

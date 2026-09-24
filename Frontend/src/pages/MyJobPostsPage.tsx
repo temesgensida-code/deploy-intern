@@ -15,6 +15,7 @@ import {
   X,
   Send,
   Loader2,
+  RotateCcw,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -199,14 +200,21 @@ export default function MyJobPostsPage() {
     setCurrentPage(1)
   }
 
-  const handleCloseJob = (jobId: number) => {
-    setJobs((currentJobs) =>
-      currentJobs.map((job) =>
-        job.id === jobId
-          ? { ...job, status: 'Closed' }
-          : job,
-      ),
-    )
+  const handleCloseJob = async (jobId: number) => {
+    try {
+      await api.post(`/employer/jobs/${jobId}/close`)
+      toast.success('Job post closed successfully.')
+      setJobs((currentJobs) =>
+        currentJobs.map((job) =>
+          job.id === jobId
+            ? { ...job, status: 'Closed' }
+            : job,
+        ),
+      )
+    } catch (err: any) {
+      console.error('Failed to close job:', err)
+      toast.error(err.response?.data?.message || 'Failed to close job post.')
+    }
   }
 
   const handleResubmitJob = async (jobId: number) => {
@@ -491,17 +499,34 @@ export default function MyJobPostsPage() {
                                   </Button>
                                 </Link>
 
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  disabled={job.status === 'Closed'}
-                                  onClick={() => handleCloseJob(job.id)}
-                                  className="h-7 px-2 text-xs text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400"
-                                  title="Close Job"
-                                >
-                                  <XCircle className="h-3.5 w-3.5 mr-1" />
-                                  {job.status === 'Closed' ? 'Closed' : 'Close'}
-                                </Button>
+                                {job.status === 'Closed' ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={resubmittingId === job.id}
+                                    onClick={() => handleResubmitJob(job.id)}
+                                    className="h-7 px-2 text-xs text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                                    title="Repost this job"
+                                  >
+                                    {resubmittingId === job.id ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                                    ) : (
+                                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                                    )}
+                                    Repost
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleCloseJob(job.id)}
+                                    className="h-7 px-2 text-xs text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400"
+                                    title="Close Job"
+                                  >
+                                    <XCircle className="h-3.5 w-3.5 mr-1" />
+                                    Close
+                                  </Button>
+                                )}
                               </>
                             )}
                           </div>

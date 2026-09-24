@@ -164,10 +164,12 @@ Route::middleware(['auth:sanctum', 'throttle:authenticated'])->group(function ()
             Route::prefix('jobs')->name('api.v1.employer.jobs.')->group(function (): void {
                 Route::get('/', [JobPostController::class, 'employerIndex'])->name('index');
                 Route::post('/', [JobPostController::class, 'store'])->name('store');
+                Route::get('{jobPost}', [JobPostController::class, 'employerShow'])->name('show');
                 Route::put('{jobPost}', [JobPostController::class, 'update'])->name('update');
                 Route::delete('{jobPost}', [JobPostController::class, 'destroy'])->name('destroy');
                 Route::post('{jobPost}/submit', [JobPostController::class, 'submit'])->name('submit');
                 Route::post('{jobPost}/close', [JobPostController::class, 'close'])->name('close');
+                Route::post('{jobPost}/reopen', [JobPostController::class, 'reopen'])->name('reopen');
                 Route::get('{jobPost}/applicants', [ApplicationController::class, 'jobApplicants'])->name('applicants');
             });
 
